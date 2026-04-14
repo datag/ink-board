@@ -13,7 +13,7 @@
 
 #include <Arduino.h>
 #include <GxEPD2_3C.h>
-#include <epd3c/GxEPD2_290c.h>  // GDEW029Z10 128x296, UC8151 (IL0373)
+#include <epd3c/GxEPD2_290_C90c.h>  // GDEM029C90 128x296, SSD1680 — Waveshare 2.9" (B) V4
 
 #define EPD_CS    SS   // GPIO15 / D8
 #define EPD_DC     4   // GPIO4  / D2
@@ -21,8 +21,8 @@
 #define EPD_BUSY  12   // GPIO12 / D6
 
 // Use init(115200, true, 2, false) for Waveshare boards with "clever" reset circuit.
-GxEPD2_3C<GxEPD2_290c, GxEPD2_290c::HEIGHT> display(
-    GxEPD2_290c(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+GxEPD2_3C<GxEPD2_290_C90c, GxEPD2_290_C90c::HEIGHT> display(
+    GxEPD2_290_C90c(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
 
 // 32x32 test bitmap rendered at the centre of the display.
 // Each plane is 4 bytes/row × 32 rows = 128 bytes.
@@ -58,20 +58,25 @@ static const uint8_t PROGMEM bm_red[128] = {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println(F("EPaper init..."));
+  delay(3000);  // Zeit um den Serial Monitor zu öffnen
+  Serial.println(F("\n\n--- ink-board boot ---"));
 
+  // Waveshare V2.1 boards have a "clever" reset circuit with level converter.
+  // init(baud, initial, reset_duration_ms, pulldown_rst_mode)
+  // → reset_duration=2ms is required for the level-converter reset circuit.
+  Serial.println(F("display.init(clever)..."));
   display.init(115200, true, 2, false);
+  Serial.println(F("setRotation..."));
   display.setRotation(1);  // landscape: 296 wide × 128 tall
 
-  const int16_t bx = (display.width()  - 32) / 2;  // 132
-  const int16_t by = (display.height() - 32) / 2;  //  48
-
+  Serial.println(F("setFullWindow + firstPage..."));
   display.setFullWindow();
   display.firstPage();
   do {
     display.fillScreen(GxEPD_WHITE);
-    display.drawBitmap(bx, by, bm_black, 32, 32, GxEPD_BLACK);
-    display.drawBitmap(bx, by, bm_red,   32, 32, GxEPD_RED);
+    // Top half black, bottom half red — no bitmaps, just fillRect.
+    display.fillRect(0, 0, display.width(), display.height() / 2, GxEPD_BLACK);
+    display.fillRect(0, display.height() / 2, display.width(), display.height() / 2, GxEPD_RED);
   } while (display.nextPage());
 
   Serial.println(F("Done."));
