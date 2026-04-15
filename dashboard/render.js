@@ -14,11 +14,12 @@ import { writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-import { loadConfig }    from './src/config.js';
-import { loadData }      from './src/dataLoader.js';
-import { renderTemplate } from './src/renderer.js';
-import { pngToBmp }      from './src/converter.js';
-import { uploadBmp }     from './src/uploader.js';
+import { loadConfig }   from './src/config.js';
+import { loadData }     from './src/dataLoader.js';
+import { loadLayout }   from './src/layout.js';
+import { layoutToSvg, layoutToPng } from './src/renderer.js';
+import { pngToBmp }     from './src/converter.js';
+import { uploadBmp }    from './src/uploader.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -26,13 +27,11 @@ function parseArgs(argv) {
   const args = { config: resolve(HERE, 'dashboard.json5'), dryRun: false, out: null };
   for (let i = 0; i < argv.length; i++) {
     switch (argv[i]) {
-      case '--config':   args.config  = resolve(argv[++i]); break;
-      case '--dry-run':  args.dryRun  = true;               break;
-      case '--out':      args.out     = resolve(argv[++i]); break;
+      case '--config':  args.config  = resolve(argv[++i]); break;
+      case '--dry-run': args.dryRun  = true;               break;
+      case '--out':     args.out     = resolve(argv[++i]); break;
       case '--help': case '-h':
-        console.log(
-          'Usage: node render.js [--config dashboard.json5] [--dry-run] [--out out.bmp]'
-        );
+        console.log('Usage: node render.js [--config dashboard.json5] [--dry-run] [--out out.bmp]');
         process.exit(0);
     }
   }
@@ -42,42 +41,48 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
-  console.log(`[config]      ${args.config}`);
+  console.log(`[config]   ${args.config}`);
   const config = loadConfig(args.config);
-  console.log(`[device]      ${config.device.url}`);
-  console.log(`[data_dir]    ${config.device.data_dir}`);
-  console.log(`[template]    ${config.device.template}`);
+  console.log(`[device]   ${config.device.url}`);
+  console.log(`[layout]   ${config.device.layout}`);
 
-  console.log('[data]        loading sources…');
+  console.log('[data]     loading sources…');
   const data = loadData(config);
   for (const [id, val] of Object.entries(data)) {
-    console.log(`              ${id} = ${val}`);
+    console.log(`           ${id} = ${val}`);
   }
 
-  console.log('[render]      launching Puppeteer…');
-  const templatePath = resolve(config.configDir, config.device.template);
-  const pngBuffer = await renderTemplate(templatePath, data);
-  console.log(`[render]      screenshot done (${pngBuffer.length} bytes PNG)`);
+  const layoutPath = resolve(config.configDir, config.device.layout);
+  const layout = loadLayout(layoutPath);
+  console.log(`[layout]   ${layout.widgets.length} widgets loaded`);
 
+  console.log('[render]   generating SVG…');
+  const svg = layoutToSvg(layout, data);
+  const debugSvg = resolve(HERE, 'debug.svg');
+  writeFileSync(debugSvg, svg);
+  console.log(`[debug]    SVG saved → ${debugSvg}`);
+
+  console.log('[render]   rasterising via Cairo (node-canvas)…');
+  const pngBuffer = layoutToPng(layout, data);
   const debugPng = resolve(HERE, 'debug.png');
   writeFileSync(debugPng, pngBuffer);
-  console.log(`[debug]       PNG saved → ${debugPng}`);
+  console.log(`[debug]    PNG saved → ${debugPng} (${pngBuffer.length} bytes)`);
 
-  console.log('[convert]     running png2bmp.sh --4bit…');
+  console.log('[convert]  running png2bmp.sh --4bit…');
   const bmpBuffer = await pngToBmp(pngBuffer);
-  console.log(`[convert]     done (${bmpBuffer.length} bytes BMP)`);
+  console.log(`[convert]  done (${bmpBuffer.length} bytes BMP)`);
 
   if (args.out) {
     writeFileSync(args.out, bmpBuffer);
-    console.log(`[out]         saved BMP → ${args.out}`);
+    console.log(`[out]      saved BMP → ${args.out}`);
   }
 
   if (args.dryRun) {
-    console.log('[dry-run]     skipping upload');
+    console.log('[dry-run]  skipping upload');
     return;
   }
 
-  console.log('[upload]      sending to device…');
+  console.log('[upload]   sending to device…');
   await uploadBmp(config.device.url, bmpBuffer);
 }
 

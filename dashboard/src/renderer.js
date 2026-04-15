@@ -1,59 +1,121 @@
-// Renders an EJS template to a 296×128 PNG buffer via Puppeteer.
-import puppeteer from 'puppeteer';
-import ejs from 'ejs';
-import { readFileSync, writeFileSync, unlinkSync } from 'fs';
-import { resolve, join } from 'path';
-import { tmpdir } from 'os';
+// Renders a layout + data context to a PNG buffer via node-canvas (Cairo).
+// ctx.antialias = 'none' disables AA at the engine level — zero gray pixels.
+import { createCanvas, registerFont } from 'canvas';
+import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from './layout.js';
 
-const DISPLAY_WIDTH  = 296;
-const DISPLAY_HEIGHT = 128;
-
-// Fontconfig that tells FreeType to disable all anti-aliasing.
-// Chrome on Linux uses the system FreeType stack and respects FONTCONFIG_FILE.
-// Must include the system fonts.conf so Chrome can still find system fonts.
-const FONTCONFIG_NO_AA = `<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <include ignore_missing="yes">/etc/fonts/fonts.conf</include>
-  <match target="font">
-    <edit name="antialias"  mode="assign"><bool>false</bool></edit>
-    <edit name="hinting"    mode="assign"><bool>false</bool></edit>
-    <edit name="rgba"       mode="assign"><const>none</const></edit>
-    <edit name="lcdfilter"  mode="assign"><const>lcdnone</const></edit>
-  </match>
-</fontconfig>`;
+const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
+const escapeXml = s => String(s).replace(/[&<>"']/g, c => ESC[c]);
 
 /**
- * Render an EJS template with the given data context and return a PNG Buffer.
- * @param {string} templatePath   absolute path to the .html.ejs file
- * @param {Record<string, string>} data  context passed into the template as `data`
- * @returns {Promise<Buffer>}
+ * Interpolate {key} placeholders in a text string using the data context.
+ * @param {string} template
+ * @param {Record<string, string>} data
  */
-export async function renderTemplate(templatePath, data) {
-  const templateSrc = readFileSync(resolve(templatePath), 'utf8');
-  const html = ejs.render(templateSrc, { data });
+function interpolate(template, data) {
+  return template.replace(/\{(\w+)\}/g, (_, key) => data[key] ?? `{${key}}`);
+}
 
-  const fontconfigFile = join(tmpdir(), `inkboard-fonts-${process.pid}.conf`);
-  writeFileSync(fontconfigFile, FONTCONFIG_NO_AA);
+/**
+ * Convert a validated layout + data context to an SVG string (for debug.svg).
+ * @param {import('./layout.js').Layout} layout
+ * @param {Record<string, string>} data
+ * @returns {string}
+ */
+export function layoutToSvg(layout, data) {
+  const bg = layout.background ?? '#ffffff';
+  const lines = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${DISPLAY_WIDTH}" height="${DISPLAY_HEIGHT}" shape-rendering="crispEdges" text-rendering="optimizeSpeed">`,
+    `  <rect x="0" y="0" width="${DISPLAY_WIDTH}" height="${DISPLAY_HEIGHT}" fill="${bg}"/>`,
+  ];
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    env: { ...process.env, FONTCONFIG_FILE: fontconfigFile },
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-lcd-text',
-      '--disable-font-subpixel-positioning',
-    ],
-  });
-
-  try {
-    const page = await browser.newPage();
-    await page.setViewport({ width: DISPLAY_WIDTH, height: DISPLAY_HEIGHT, deviceScaleFactor: 1 });
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    return await page.screenshot({ type: 'png' });
-  } finally {
-    await browser.close();
-    try { unlinkSync(fontconfigFile); } catch { /* ignore */ }
+  for (const w of layout.widgets) {
+    switch (w.type) {
+      case 'rect': {
+        const fill   = w.fill   ?? 'none';
+        const stroke = w.stroke ?? 'none';
+        const sw     = w.strokeWidth ?? 1;
+        lines.push(
+          `  <rect x="${w.x}" y="${w.y}" width="${w.w}" height="${w.h}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`
+        );
+        break;
+      }
+      case 'line': {
+        const color = w.color ?? '#000000';
+        const width = w.width ?? 1;
+        lines.push(
+          `  <line x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}" stroke="${color}" stroke-width="${width}"/>`
+        );
+        break;
+      }
+      case 'text': {
+        const color  = w.color ?? '#000000';
+        const bold   = w.bold ? 'bold' : 'normal';
+        const family = w.fontFamily ?? 'monospace';
+        const value  = escapeXml(interpolate(w.text, data));
+        lines.push(
+          `  <text x="${w.x}" y="${w.y}" font-family="${family}" font-size="${w.fontSize}" font-weight="${bold}" fill="${color}" dominant-baseline="text-before-edge">${value}</text>`
+        );
+        break;
+      }
+    }
   }
+
+  lines.push('</svg>');
+  return lines.join('\n');
+}
+
+/**
+ * Render a layout + data context to a PNG Buffer using node-canvas (Cairo).
+ * Anti-aliasing is disabled at the Cairo context level.
+ * @param {import('./layout.js').Layout} layout
+ * @param {Record<string, string>} data
+ * @returns {Buffer}
+ */
+export function layoutToPng(layout, data) {
+  const canvas = createCanvas(DISPLAY_WIDTH, DISPLAY_HEIGHT);
+  const ctx = canvas.getContext('2d');
+
+  ctx.antialias         = 'none';
+  ctx.imageSmoothingEnabled = false;
+
+  // Background
+  ctx.fillStyle = layout.background ?? '#ffffff';
+  ctx.fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+
+  for (const w of layout.widgets) {
+    switch (w.type) {
+      case 'rect': {
+        if (w.fill) {
+          ctx.fillStyle = w.fill;
+          ctx.fillRect(w.x, w.y, w.w, w.h);
+        }
+        if (w.stroke) {
+          ctx.strokeStyle = w.stroke;
+          ctx.lineWidth   = w.strokeWidth ?? 1;
+          ctx.strokeRect(w.x, w.y, w.w, w.h);
+        }
+        break;
+      }
+      case 'line': {
+        ctx.strokeStyle = w.color ?? '#000000';
+        ctx.lineWidth   = w.width ?? 1;
+        ctx.beginPath();
+        ctx.moveTo(w.x1, w.y1);
+        ctx.lineTo(w.x2, w.y2);
+        ctx.stroke();
+        break;
+      }
+      case 'text': {
+        const bold   = w.bold ? 'bold ' : '';
+        const family = w.fontFamily ?? 'monospace';
+        ctx.font         = `${bold}${w.fontSize}px ${family}`;
+        ctx.fillStyle    = w.color ?? '#000000';
+        ctx.textBaseline = 'top';
+        ctx.fillText(interpolate(w.text, data), w.x, w.y);
+        break;
+      }
+    }
+  }
+
+  return canvas.toBuffer('image/png');
 }

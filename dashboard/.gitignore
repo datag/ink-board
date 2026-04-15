@@ -1,10 +1,10 @@
-/.idea
+/.idea/
 
 /node_modules/
 
-# Dashboard config
+# Dashboard config (contains local paths and device IP)
 /dashboard.json5
 
 # Debug artifacts
+/debug.svg
 /debug.png
-/*.bmp

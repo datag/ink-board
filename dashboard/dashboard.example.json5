@@ -1,7 +1,6 @@
 {
   // ink-board dashboard configuration
   // Format: JSON5 (comments and trailing commas are allowed)
-  // Reference: https://json5.org/
 
   device: {
     // URL of the ink-board device (no trailing slash)
@@ -10,41 +9,40 @@
     // Directory where data-source programs drop their *.json / *.txt files
     data_dir: "/home/user/.local/share/ink-board/data",
 
-    // Path to the EJS HTML template, relative to this config file
-    template: "templates/dashboard.example.html.ejs",
+    // Path to the layout JSON5 file, relative to this config file
+    layout: "layouts/dashboard.example.layout.json5",
   },
 
   // Each entry defines one data source and how to extract a value from it.
-  // The `id` becomes the key in the EJS template's `data` object.
+  // The `id` becomes the key referenced as {id} in the layout's text widgets.
   sources: [
 
     {
-      id: "btc",            // accessed as data.btc in the template
-      file: "btc.json",     // file in data_dir
-      key: "price",         // dot-path into the JSON (e.g. "current.usd")
-      max_age: 300,         // seconds — treat as stale after 5 minutes
+      id: "btc",
+      file: "btc.json",
+      key: "price",
+      max_age: 300,
       stale_placeholder: "—",
     },
 
     {
       id: "weather",
       file: "weather.json",
-      key: "temp_c",        // e.g. { "temp_c": "12°C", "desc": "Cloudy" }
-      max_age: 1800,        // 30 minutes — weather doesn't change that fast
+      key: "temp_c",
+      max_age: 1800,
       stale_placeholder: "—",
     },
 
     {
       id: "power",
-      file: "power.txt",    // plain-text: first line is the value, e.g. "2.4"
-      // key: omit for .txt files — the whole first line is used
-      max_age: 60,          // 1 minute — should update frequently
+      file: "power.txt",
+      max_age: 60,
       stale_placeholder: "—",
     },
 
     {
       id: "clock",
-      file: "clock.txt",    // a cron job writes current time: echo "14:30" > clock.txt
+      file: "clock.txt",
       max_age: 120,
       stale_placeholder: "--:--",
     },

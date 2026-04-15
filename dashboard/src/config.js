@@ -14,9 +14,9 @@ import JSON5 from 'json5';
 
 /**
  * @typedef {Object} Config
- * @property {{ url: string, data_dir: string, template: string }} device
+ * @property {{ url: string, data_dir: string, layout: string }} device
  * @property {Source[]} sources
- * @property {string} configDir    - directory of the config file (for resolving template)
+ * @property {string} configDir    - directory of the config file (for resolving layout)
  */
 
 /**
@@ -29,14 +29,12 @@ export function loadConfig(configPath) {
   const raw = readFileSync(absPath, 'utf8');
   const cfg = JSON5.parse(raw);
 
-  // Validate device block
   if (!cfg.device) throw new Error('Config missing "device" block');
-  const { url, data_dir, template } = cfg.device;
+  const { url, data_dir, layout } = cfg.device;
   if (!url)      throw new Error('Config missing device.url');
   if (!data_dir) throw new Error('Config missing device.data_dir');
-  if (!template) throw new Error('Config missing device.template');
+  if (!layout)   throw new Error('Config missing device.layout');
 
-  // Validate sources
   if (!Array.isArray(cfg.sources) || cfg.sources.length === 0) {
     throw new Error('Config must have at least one entry in "sources"');
   }
