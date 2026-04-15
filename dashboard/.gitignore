@@ -1,0 +1,4 @@
+/node_modules/
+
+# Dashboard config
+/dashboard.json5
