@@ -1,0 +1,18 @@
+{
+  "name": "ink-board-dashboard",
+  "version": "1.0.0",
+  "description": "Renders a tri-color e-ink dashboard image and uploads it to an ink-board device",
+  "main": "render.js",
+  "type": "module",
+  "scripts": {
+    "render": "node render.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "json5": "^2.2.3",
+    "puppeteer": "^24.0.0"
+  }
+}
