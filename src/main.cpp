@@ -62,7 +62,7 @@ static void showText(const char* line1, const char* line2 = nullptr) {
     } while (display.nextPage());
 }
 
-// ── BMP pixel helper ──────────────────────────────────────────────────────────
+// ── BMP pixel helpers ─────────────────────────────────────────────────────────
 
 static inline void paintPixel(int32_t x, int32_t y, uint8_t r, uint8_t g, uint8_t b) {
     if (x < 0 || x >= EPD_W || y < 0 || y >= EPD_H) return;
@@ -75,23 +75,44 @@ static inline void paintPixel(int32_t x, int32_t y, uint8_t r, uint8_t g, uint8_
     }
 }
 
+// cls: 0 = white (no-op), 1 = black, 2 = red
+static inline void paintPixelByClass(int32_t x, int32_t y, uint8_t cls) {
+    if (x < 0 || x >= EPD_W || y < 0 || y >= EPD_H) return;
+    uint32_t idx = (uint32_t)y * (EPD_W / 8) + (uint32_t)x / 8;
+    uint8_t  bit = 0x80 >> (x % 8);
+    if      (cls == 2) red_plane[idx]   |= bit;
+    else if (cls == 1) black_plane[idx] |= bit;
+}
+
+// Classify an RGB color into 0=white, 1=black, 2=red
+static inline uint8_t classifyColor(uint8_t r, uint8_t g, uint8_t b) {
+    if (r > 180 && g < 80 && b < 80) return 2;
+    if (0.299f * r + 0.587f * g + 0.114f * b < 128.0f) return 1;
+    return 0;
+}
+
 // ── BMP upload state machine ──────────────────────────────────────────────────
 // Processed chunk-by-chunk via the multipart upload handler, so the
 // ESP8266WebServer never tries to buffer the full body in RAM.
 
 static struct {
-    uint8_t  hdr[54];       // file header (14 B) + DIB header (40 B)
+    uint8_t  hdr[54];           // file header (14 B) + DIB header (40 B)
     uint32_t hdrGot;
-    uint32_t pixelOffset;   // byte offset to pixel data within the file
-    uint32_t filePos;       // total bytes consumed so far
+    uint32_t pixelOffset;       // byte offset to pixel data within the file
+    uint32_t filePos;           // total bytes consumed so far
     int32_t  width, height;
     bool     topDown;
-    uint32_t rowStride;     // bytes per row, padded to 4-byte boundary
-    int32_t  fileRow;       // next row index to decode
-    uint32_t rowGot;        // bytes collected in rowBuf so far
-    uint8_t  rowBuf[900];   // buffer for one row (max 300 px × 3)
+    uint16_t bpp;               // bits per pixel: 4, 8, or 24
+    bool     indexed;           // true for 4-bit or 8-bit indexed modes
+    uint8_t  colorClass[256];   // pre-classified palette: 0=white, 1=black, 2=red
+    uint32_t colorTableGot;     // bytes of color table received so far
+    uint32_t colorTableBytes;   // total color table size in bytes
+    uint32_t rowStride;         // bytes per row, padded to 4-byte boundary
+    int32_t  fileRow;           // next row index to decode
+    uint32_t rowGot;            // bytes collected in rowBuf so far
+    uint8_t  rowBuf[296];       // buffer for one row (max 296 px × 1 for 8-bit)
     bool     ok;
-    const char* error;  // set when ok becomes false
+    const char* error;          // set when ok becomes false
 } bmp;
 
 static void feedBmpChunk(const uint8_t* data, size_t len) {
@@ -115,20 +136,64 @@ static void feedBmpChunk(const uint8_t* data, size_t len) {
                 uint16_t bpp   = (uint16_t)bmp.hdr[28] | ((uint16_t)bmp.hdr[29]<<8);
                 uint32_t compr = (uint32_t)bmp.hdr[30] | ((uint32_t)bmp.hdr[31]<<8)
                                | ((uint32_t)bmp.hdr[32]<<16) | ((uint32_t)bmp.hdr[33]<<24);
-                if (bpp != 24 || compr != 0) { bmp.ok = false; bmp.error = "need 24-bit uncompressed BMP (use: convert in.png -resize 296x128! -type TrueColor BMP3:out.bmp)"; return; }
-                bmp.topDown   = (h < 0);
-                bmp.width     = w;
-                bmp.height    = bmp.topDown ? -h : h;
-                bmp.rowStride = ((uint32_t)w * 3 + 3) & ~3u;
+                if ((bpp != 4 && bpp != 8 && bpp != 24) || compr != 0) {
+                    bmp.ok = false;
+                    bmp.error = "need 4-bit, 8-bit, or 24-bit uncompressed BMP";
+                    return;
+                }
+                bmp.topDown  = (h < 0);
+                bmp.width    = w;
+                bmp.height   = bmp.topDown ? -h : h;
+                bmp.bpp      = bpp;
+                bmp.indexed  = (bpp == 4 || bpp == 8);
+                if      (bpp == 24) bmp.rowStride = ((uint32_t)w * 3 + 3) & ~3u;
+                else if (bpp == 8)  bmp.rowStride = ((uint32_t)w     + 3) & ~3u;
+                else                bmp.rowStride = (((uint32_t)w + 1) / 2 + 3) & ~3u;
+                bmp.colorTableBytes = bmp.indexed ? (bmp.pixelOffset - 54) : 0;
                 memset(black_plane, 0, PLANE_BYTES);
                 memset(red_plane,   0, PLANE_BYTES);
             }
+        } else if (bmp.indexed && bmp.colorTableGot < bmp.colorTableBytes) {
+            // ── Read color table, pre-classify each 4-byte BGRA entry ─────────
+            while (len > 0 && bmp.colorTableGot < bmp.colorTableBytes) {
+                uint32_t entryIdx   = bmp.colorTableGot / 4;
+                uint32_t byteInEntry = bmp.colorTableGot % 4;
+                // rowBuf used as 4-byte scratch — safe, always within bounds
+                bmp.rowBuf[byteInEntry] = *data++;
+                bmp.colorTableGot++; bmp.filePos++; len--;
+                if (byteInEntry == 3 && entryIdx < 256) {
+                    // rowBuf layout: [0]=B [1]=G [2]=R [3]=reserved
+                    bmp.colorClass[entryIdx] = classifyColor(bmp.rowBuf[2], bmp.rowBuf[1], bmp.rowBuf[0]);
+                }
+            }
         } else if (bmp.filePos < bmp.pixelOffset) {
-            // ── Skip any extra header bytes beyond 54 ─────────────────────────
+            // ── Skip any extra bytes between color table and pixel data ────────
             size_t skip = min(len, (size_t)(bmp.pixelOffset - bmp.filePos));
             bmp.filePos += skip; data += skip; len -= skip;
+        } else if (bmp.bpp == 24) {
+            // ── 24-bit pixels: process one pixel (3 bytes) at a time ──────────
+            // rowBuf[0..2] used as a 3-byte pixel accumulator; no full-row buffer
+            // needed, so rowBuf[296] is sufficient even for 24-bit.
+            uint32_t pixBytes = (uint32_t)bmp.width * 3;
+            while (len > 0 && bmp.fileRow < bmp.height) {
+                if (bmp.rowGot < pixBytes) {
+                    uint32_t byteInPix = bmp.rowGot % 3;
+                    bmp.rowBuf[byteInPix] = *data++;
+                    bmp.rowGot++; bmp.filePos++; len--;
+                    if (byteInPix == 2) {
+                        int32_t y = bmp.topDown ? bmp.fileRow : (bmp.height - 1 - bmp.fileRow);
+                        int32_t x = (int32_t)(bmp.rowGot / 3) - 1;
+                        paintPixel(x, y, bmp.rowBuf[2], bmp.rowBuf[1], bmp.rowBuf[0]);
+                    }
+                } else {
+                    // Skip row padding bytes (0–3 bytes to reach 4-byte boundary)
+                    size_t skip = min(len, (size_t)(bmp.rowStride - bmp.rowGot));
+                    bmp.rowGot += skip; bmp.filePos += skip; data += skip; len -= skip;
+                }
+                if (bmp.rowGot == bmp.rowStride) { bmp.fileRow++; bmp.rowGot = 0; }
+            }
         } else {
-            // ── Pixel data: assemble one row at a time ────────────────────────
+            // ── Indexed pixels (4-bit / 8-bit): buffer full row then decode ────
             if (bmp.fileRow >= bmp.height) break;
             size_t n = min(len, (size_t)(bmp.rowStride - bmp.rowGot));
             memcpy(bmp.rowBuf + bmp.rowGot, data, n);
@@ -136,8 +201,16 @@ static void feedBmpChunk(const uint8_t* data, size_t len) {
 
             if (bmp.rowGot == bmp.rowStride) {
                 int32_t y = bmp.topDown ? bmp.fileRow : (bmp.height - 1 - bmp.fileRow);
-                for (int32_t x = 0; x < bmp.width; x++)
-                    paintPixel(x, y, bmp.rowBuf[x*3+2], bmp.rowBuf[x*3+1], bmp.rowBuf[x*3+0]);
+                if (bmp.bpp == 8) {
+                    for (int32_t x = 0; x < bmp.width; x++)
+                        paintPixelByClass(x, y, bmp.colorClass[bmp.rowBuf[x]]);
+                } else {  // 4-bit: two pixels per byte, high nibble first
+                    for (int32_t x = 0; x < bmp.width; x++) {
+                        uint8_t b  = bmp.rowBuf[x / 2];
+                        uint8_t idx = (x & 1) ? (b & 0x0F) : (b >> 4);
+                        paintPixelByClass(x, y, bmp.colorClass[idx]);
+                    }
+                }
                 bmp.fileRow++;
                 bmp.rowGot = 0;
             }
@@ -193,13 +266,16 @@ void handleClear() {
 void handleRoot() {
     server.send(200, "text/plain",
         "ink-board\n"
-        "POST /update  — multipart BMP upload (296x128, 24-bit uncompressed)\n"
+        "POST /update  — multipart BMP upload (296x128, 4/8/24-bit uncompressed)\n"
         "POST /clear   — clear display\n"
         "\n"
         "Convert PNG to compatible BMP (requires ImageMagick):\n"
-        "  convert input.png -resize 296x128! -type TrueColor BMP3:output.bmp\n"
-        "  # ImageMagick 7: replace 'convert' with 'magick'\n"
-        "  # Or use: tools/png2bmp.sh input.png output.bmp\n"
+        "  # 4-bit indexed ~19KB (preferred):\n"
+        "  tools/png2bmp.sh input.png output.bmp\n"
+        "  # 8-bit indexed ~38KB:\n"
+        "  tools/png2bmp.sh --8bit input.png output.bmp\n"
+        "  # 24-bit ~113KB (legacy):\n"
+        "  tools/png2bmp.sh --24bit input.png output.bmp\n"
         "\n"
         "Upload:\n"
         "  curl http://<ip>/update -F \"file=@output.bmp;type=image/bmp\"\n");
