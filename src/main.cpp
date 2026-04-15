@@ -91,6 +91,7 @@ static struct {
     uint32_t rowGot;        // bytes collected in rowBuf so far
     uint8_t  rowBuf[900];   // buffer for one row (max 300 px × 3)
     bool     ok;
+    const char* error;  // set when ok becomes false
 } bmp;
 
 static void feedBmpChunk(const uint8_t* data, size_t len) {
@@ -104,7 +105,7 @@ static void feedBmpChunk(const uint8_t* data, size_t len) {
             bmp.hdrGot += n; bmp.filePos += n; data += n; len -= n;
 
             if (bmp.hdrGot == 54) {
-                if (bmp.hdr[0] != 'B' || bmp.hdr[1] != 'M') { bmp.ok = false; return; }
+                if (bmp.hdr[0] != 'B' || bmp.hdr[1] != 'M') { bmp.ok = false; bmp.error = "not a BMP file"; return; }
                 bmp.pixelOffset = (uint32_t)bmp.hdr[10] | ((uint32_t)bmp.hdr[11]<<8)
                                 | ((uint32_t)bmp.hdr[12]<<16) | ((uint32_t)bmp.hdr[13]<<24);
                 int32_t w = (int32_t)((uint32_t)bmp.hdr[18] | ((uint32_t)bmp.hdr[19]<<8)
@@ -114,7 +115,7 @@ static void feedBmpChunk(const uint8_t* data, size_t len) {
                 uint16_t bpp   = (uint16_t)bmp.hdr[28] | ((uint16_t)bmp.hdr[29]<<8);
                 uint32_t compr = (uint32_t)bmp.hdr[30] | ((uint32_t)bmp.hdr[31]<<8)
                                | ((uint32_t)bmp.hdr[32]<<16) | ((uint32_t)bmp.hdr[33]<<24);
-                if (bpp != 24 || compr != 0) { bmp.ok = false; return; }
+                if (bpp != 24 || compr != 0) { bmp.ok = false; bmp.error = "need 24-bit uncompressed BMP (use: convert in.png -resize 296x128! -type TrueColor BMP3:out.bmp)"; return; }
                 bmp.topDown   = (h < 0);
                 bmp.width     = w;
                 bmp.height    = bmp.topDown ? -h : h;
@@ -152,7 +153,8 @@ void handleUpload() {
     HTTPUpload& up = server.upload();
     if (up.status == UPLOAD_FILE_START) {
         memset(&bmp, 0, sizeof(bmp));
-        bmp.ok = true;
+        bmp.ok    = true;
+        bmp.error = nullptr;
     } else if (up.status == UPLOAD_FILE_WRITE) {
         feedBmpChunk(up.buf, up.currentSize);
     } else if (up.status == UPLOAD_FILE_END) {
@@ -163,8 +165,14 @@ void handleUpload() {
 
 // Called after the upload completes — send response then refresh display.
 void handleUpdate() {
-    if (!bmp.ok || bmp.fileRow == 0) {
-        server.send(400, "text/plain", "BMP decode error");
+    if (!bmp.ok) {
+        String msg = "BMP format error: ";
+        msg += bmp.error ? bmp.error : "unknown";
+        server.send(400, "text/plain", msg);
+        return;
+    }
+    if (bmp.fileRow == 0) {
+        server.send(400, "text/plain", "BMP decode error: no rows decoded (truncated upload?)");
         return;
     }
     server.send(200, "text/plain", "OK");
@@ -186,8 +194,15 @@ void handleRoot() {
     server.send(200, "text/plain",
         "ink-board\n"
         "POST /update  — multipart BMP upload (296x128, 24-bit uncompressed)\n"
-        "  curl -X POST http://<ip>/update -F file=@image.bmp\n"
-        "POST /clear   — clear display\n");
+        "POST /clear   — clear display\n"
+        "\n"
+        "Convert PNG to compatible BMP (requires ImageMagick):\n"
+        "  convert input.png -resize 296x128! -type TrueColor BMP3:output.bmp\n"
+        "  # ImageMagick 7: replace 'convert' with 'magick'\n"
+        "  # Or use: tools/png2bmp.sh input.png output.bmp\n"
+        "\n"
+        "Upload:\n"
+        "  curl http://<ip>/update -F \"file=@output.bmp;type=image/bmp\"\n");
 }
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
