@@ -59,6 +59,10 @@ async function main() {
   const pngBuffer = await renderTemplate(templatePath, data);
   console.log(`[render]      screenshot done (${pngBuffer.length} bytes PNG)`);
 
+  const debugPng = resolve(HERE, 'debug.png');
+  writeFileSync(debugPng, pngBuffer);
+  console.log(`[debug]       PNG saved → ${debugPng}`);
+
   console.log('[convert]     running png2bmp.sh --4bit…');
   const bmpBuffer = await pngToBmp(pngBuffer);
   console.log(`[convert]     done (${bmpBuffer.length} bytes BMP)`);

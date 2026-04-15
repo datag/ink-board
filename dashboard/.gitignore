@@ -1,4 +1,10 @@
+/.idea
+
 /node_modules/
 
 # Dashboard config
 /dashboard.json5
+
+# Debug artifacts
+/debug.png
+/*.bmp
