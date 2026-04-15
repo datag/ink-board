@@ -1,7 +1,15 @@
 // Renders a layout + data context to a PNG buffer via node-canvas (Cairo).
 // ctx.antialias = 'none' disables AA at the engine level — zero gray pixels.
 import { createCanvas, registerFont } from 'canvas';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from './layout.js';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+// Register Press Start 2P — pixel font, renders perfectly with antialias='none'.
+// 8px = Adafruit GFX size 1, 16px = Adafruit GFX size 2.
+registerFont(resolve(HERE, '../fonts/PressStart2P-Regular.ttf'), { family: 'Press Start 2P' });
 
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
 const escapeXml = s => String(s).replace(/[&<>"']/g, c => ESC[c]);
@@ -108,7 +116,9 @@ export function layoutToPng(layout, data) {
       case 'text': {
         const bold   = w.bold ? 'bold ' : '';
         const family = w.fontFamily ?? 'monospace';
-        ctx.font         = `${bold}${w.fontSize}px ${family}`;
+        // Quote family names that contain spaces (CSS font shorthand requirement)
+        const quotedFamily = family.includes(' ') ? `"${family}"` : family;
+        ctx.font         = `${bold}${w.fontSize}px ${quotedFamily}`;
         ctx.fillStyle    = w.color ?? '#000000';
         ctx.textBaseline = 'top';
         ctx.fillText(interpolate(w.text, data), w.x, w.y);
