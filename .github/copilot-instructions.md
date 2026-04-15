@@ -3,24 +3,24 @@
 This file tells Copilot sessions how to build, test, flash, and reason about this repository.
 
 ## Build, test, and lint commands
-- Build: Use PlatformIO for all builds. From the repository root:
+- Build: Use PlatformIO for all builds. From the `firmware/` directory:
   - Full build: `~/.platformio/penv/bin/pio run -e nodemcuv2`
   - Quiet build: `~/.platformio/penv/bin/pio run -e nodemcuv2 --silent`
 - Flash/upload to a NodeMCU v2:
   - `~/.platformio/penv/bin/pio run -t upload -e nodemcuv2 --upload-port /dev/ttyUSB0`
 - Serial monitor: `~/.platformio/penv/bin/pio device monitor -p /dev/ttyUSB0`
-- Tests: No unit tests exist yet. If added under `test/`, run a single test via:
+- Tests: No unit tests exist yet. If added under `firmware/test/`, run a single test via:
   - `~/.platformio/penv/bin/pio test -e nodemcuv2 -f <test_name>`
 - `pio` is not on PATH; always use `~/.platformio/penv/bin/pio`.
 
 ## High-level architecture
 - **Target**: ESP8266 (NodeMCU 1.0 / ESP-12E), Arduino framework via PlatformIO (`env:nodemcuv2`).
 - **Display**: Waveshare 2.9" ePaper (B) — 296×128 px, tri-color (black/white/red), SPI, driven by `GxEPD2_3C<GxEPD2_290_C90c, 8>` (page_height=8 saves ~9KB BSS) from the GxEPD2 library.
-- **Entry point**: `src/main.cpp` — `setup()` connects to WiFi (credentials in `include/config.h`, gitignored), shows IP on the display, then starts an HTTP server. `loop()` calls `server.handleClient()`.
+- **Entry point**: `firmware/src/main.cpp` — `setup()` connects to WiFi (credentials in `firmware/include/config.h`, gitignored), shows IP on the display, then starts an HTTP server. `loop()` calls `server.handleClient()`.
 - **HTTP endpoints**:
   - `POST /update` — accepts a `multipart/form-data` BMP upload; renders it on the display.
   - `POST /clear` — clears the display to white.
-- **Build flow**: PlatformIO compiles `src/` and links against GxEPD2 + Adafruit GFX Library; output at `.pio/build/nodemcuv2/firmware.bin`.
+- **Build flow**: PlatformIO compiles `firmware/src/` and links against GxEPD2 + Adafruit GFX Library; output at `firmware/.pio/build/nodemcuv2/firmware.bin`.
 
 ## Key conventions and repository-specific patterns
 
@@ -47,7 +47,7 @@ Use `SS` (alias for GPIO15/D8) as `EPD_CS` in code to stay portable. GPIO0 (D3) 
 - Store bitmaps in `PROGMEM`; format is MSB-first, 1 bit per pixel, rows padded to byte boundaries.
 
 ### platformio.ini is authoritative
-Add all build flags, library deps, upload settings, and monitor options there. Current deps:
+Add all build flags, library deps, upload settings, and monitor options to `firmware/platformio.ini`. Current deps:
 ```
 lib_deps =
   zinggjm/GxEPD2
@@ -55,8 +55,8 @@ lib_deps =
 ```
 
 ### WiFi credentials
-- Copy `include/config.h.example` to `include/config.h` and fill in real credentials.
-- `include/config.h` is gitignored — never commit it.
+- Copy `firmware/include/config.h.example` to `firmware/include/config.h` and fill in real credentials.
+- `firmware/include/config.h` is gitignored — never commit it.
 
 ### BMP upload workflow
 The `/update` endpoint accepts `multipart/form-data` to avoid ESP8266WebServer buffering the entire body (which would OOM at 113KB). Use:
@@ -70,7 +70,7 @@ Image requirements:
 
 To generate a compatible BMP from any image:
 ```bash
-convert input.png -resize 296x128! -type TrueColor BMP3:output.bmp
+firmware/tools/png2bmp.sh input.png output.bmp
 ```
 
 ### LED / GPIO
