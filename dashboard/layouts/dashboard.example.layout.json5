@@ -16,25 +16,25 @@
     { type: "line", x1: 160, y1: 0, x2: 160, y2: 128, color: "#000000", width: 2 },
 
     // ── Left column: BTC ────────────────────────────────────────────────────
-    { type: "text", x: 8,  y: 6,   text: "\u20BF BITCOIN",  fontSize: 12, color: "#ff0000" },
-    { type: "text", x: 8,  y: 24,  text: "{btc}",           fontSize: 42, color: "#000000", bold: true },
-    { type: "text", x: 8,  y: 112, text: "USD",             fontSize: 12, color: "#000000" },
+    { type: "text", x: 8,  y: 6,   text: "\u20BF BITCOIN",  fontSize: 14, color: "#ff0000" },
+    { type: "text", x: 8,  y: 24,  text: "{btc}",           fontSize: 14, color: "#000000", bold: true },
+    { type: "text", x: 8,  y: 112, text: "USD",             fontSize: 14, color: "#000000" },
 
     // ── Right column dividers ────────────────────────────────────────────────
     { type: "line", x1: 162, y1: 42,  x2: 296, y2: 42,  color: "#000000", width: 1 },
     { type: "line", x1: 162, y1: 84,  x2: 296, y2: 84,  color: "#000000", width: 1 },
 
     // ── Weather (row 0–41) ───────────────────────────────────────────────────
-    { type: "text", x: 167, y: 4,  text: "WEATHER",    fontSize: 12, color: "#000000" },
+    { type: "text", x: 167, y: 4,  text: "WEATHER",    fontSize: 14, color: "#000000", bold: true },
     { type: "text", x: 167, y: 18, text: "{weather}",  fontSize: 22, color: "#000000", bold: true },
 
     // ── Power (row 42–83) ────────────────────────────────────────────────────
-    { type: "text", x: 167, y: 46, text: "POWER (KW)", fontSize: 12, color: "#000000" },
+    { type: "text", x: 167, y: 46, text: "POWER (KW)", fontSize: 14, color: "#000000" },
     { type: "text", x: 167, y: 60, text: "{power}",    fontSize: 22, color: "#000000", bold: true },
 
     // ── Clock (row 84–127) — inverted ────────────────────────────────────────
     { type: "rect", x: 162, y: 84, w: 134, h: 44, fill: "#000000" },
-    { type: "text", x: 167, y: 88,  text: "TIME",     fontSize: 12, color: "#ffffff" },
+    { type: "text", x: 167, y: 88,  text: "TIME",     fontSize: 14, color: "#ffffff" },
     { type: "text", x: 167, y: 102, text: "{clock}",  fontSize: 22, color: "#ffffff", bold: true },
 
   ],
