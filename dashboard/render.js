@@ -69,8 +69,9 @@ async function main() {
   console.log(`[debug]    PNG saved → ${debugPng} (${pngBuffer.length} bytes)`);
 
   console.log('[convert]  running png2bmp.sh --4bit…');
+  const t0 = Date.now();
   const bmpBuffer = await pngToBmp(pngBuffer);
-  console.log(`[convert]  done (${bmpBuffer.length} bytes BMP)`);
+  console.log(`[convert]  done in ${Date.now()-t0}ms (${bmpBuffer.length} bytes BMP)`);
 
   if (args.out) {
     writeFileSync(args.out, bmpBuffer);
@@ -83,7 +84,9 @@ async function main() {
   }
 
   console.log('[upload]   sending to device…');
+  const t1 = Date.now();
   await uploadBmp(config.device.url, bmpBuffer);
+  console.log(`[upload]   round-trip: ${Date.now()-t1}ms`);
 }
 
 main().catch(err => {
