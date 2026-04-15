@@ -15,8 +15,11 @@ This file tells Copilot sessions how to build, test, flash, and reason about thi
 
 ## High-level architecture
 - **Target**: ESP8266 (NodeMCU 1.0 / ESP-12E), Arduino framework via PlatformIO (`env:nodemcuv2`).
-- **Display**: Waveshare 2.9" ePaper (B) — 296×128 px, tri-color (black/white/red), SPI, driven by `GxEPD2_3C<GxEPD2_290c, …>` from the GxEPD2 library.
-- **Entry point**: `src/main.cpp` — `setup()` initializes the display and renders a full-screen bitmap; `loop()` is intentionally empty (ePaper is static).
+- **Display**: Waveshare 2.9" ePaper (B) — 296×128 px, tri-color (black/white/red), SPI, driven by `GxEPD2_3C<GxEPD2_290_C90c, 8>` (page_height=8 saves ~9KB BSS) from the GxEPD2 library.
+- **Entry point**: `src/main.cpp` — `setup()` connects to WiFi (credentials in `include/config.h`, gitignored), shows IP on the display, then starts an HTTP server. `loop()` calls `server.handleClient()`.
+- **HTTP endpoints**:
+  - `POST /update` — accepts a `multipart/form-data` BMP upload; renders it on the display.
+  - `POST /clear` — clears the display to white.
 - **Build flow**: PlatformIO compiles `src/` and links against GxEPD2 + Adafruit GFX Library; output at `.pio/build/nodemcuv2/firmware.bin`.
 
 ## Key conventions and repository-specific patterns
@@ -34,10 +37,11 @@ This file tells Copilot sessions how to build, test, flash, and reason about thi
 Use `SS` (alias for GPIO15/D8) as `EPD_CS` in code to stay portable. GPIO0 (D3) and GPIO2 (D4) are boot-sensitive pins; avoid them for display control lines.
 
 ### GxEPD2 usage patterns
-- Driver class for this display: `GxEPD2_3C<GxEPD2_290c, GxEPD2_290c::HEIGHT>`.
-- Include the 3-color driver as `#include <epd3c/GxEPD2_290c.h>` (it lives under `src/epd3c/` inside the library; the top-level `GxEPD2_290c.h` does not exist).
+- Driver class for this display: `GxEPD2_3C<GxEPD2_290_C90c, 8>` (use page_height=8 to keep BSS small — saves ~9KB vs HEIGHT=296).
+- Actual driver: `GxEPD2_290_C90c` (SSD1680 controller), used on Waveshare 2.9" B **V4** and V2.1 boards.
+- Include the 3-color driver as `#include <epd3c/GxEPD2_290_C90c.h>`.
 - Always wrap drawing calls in a `firstPage() … nextPage()` picture loop; never call `display()` directly on a paged display.
-- Use `init(115200, true, 2, false)` for Waveshare boards with the "clever" reset circuit (shorter reset pulse). Fall back to `init(115200)` if unsure.
+- Use `init(115200, true, 2, false)` for Waveshare V2.1+ boards (shorter reset pulse). Fall back to `init(115200)` if unsure.
 - Drawing colors: `GxEPD_WHITE`, `GxEPD_BLACK`, `GxEPD_RED` (aliased to `GxEPD_COLORED`).
 - For 3-color bitmaps, call `drawBitmap()` twice inside the page loop — once with `GxEPD_BLACK` and the black plane, once with `GxEPD_RED` and the red plane.
 - Store bitmaps in `PROGMEM`; format is MSB-first, 1 bit per pixel, rows padded to byte boundaries.
@@ -48,6 +52,25 @@ Add all build flags, library deps, upload settings, and monitor options there. C
 lib_deps =
   zinggjm/GxEPD2
   adafruit/Adafruit GFX Library
+```
+
+### WiFi credentials
+- Copy `include/config.h.example` to `include/config.h` and fill in real credentials.
+- `include/config.h` is gitignored — never commit it.
+
+### BMP upload workflow
+The `/update` endpoint accepts `multipart/form-data` to avoid ESP8266WebServer buffering the entire body (which would OOM at 113KB). Use:
+```bash
+curl http://<IP>/update -F "file=@image.bmp;type=image/bmp"
+```
+Image requirements:
+- 296×128 pixels, 24-bit uncompressed BMP (no compression, no color table)
+- Top-down (negative height) or bottom-up — both are handled
+- Color quantization: R>180 & G<80 & B<80 → red; luminance < 128 → black; else white
+
+To generate a compatible BMP from any image:
+```bash
+convert input.png -resize 296x128! -type TrueColor BMP3:output.bmp
 ```
 
 ### LED / GPIO
