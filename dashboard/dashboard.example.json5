@@ -17,13 +17,17 @@
   scripts: {
 
     tibber: {
+      enabled: true,
       // Personal access token from https://developer.tibber.com/settings/access-token
       access_token: "your-tibber-access-token-here",
     },
 
     binance: {
+      enabled: true,
       // Optional Binance API key. Set to null for unauthenticated requests (rate limit applies).
       api_key: null,
+      // Trading pair symbol to fetch
+      symbol: "BTCUSDT",
     },
 
   },
