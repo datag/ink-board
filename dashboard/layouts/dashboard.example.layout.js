@@ -32,7 +32,7 @@ export default {
     { type: "line", x1: 0, y1: 50, x2: 159, y2: 50, color: "#000000", width: 1 },
 
     // ── Left column: Tibber ─────────────────────────────────────────────────
-    { type: "text", x: 8, y: 60,  text: "TIBBER",         fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
+    { type: "text", x: 8, y: 60,  text: "STROM",         fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
     // Price in cents
     { type: "text", x: 8, y: 75,  text: "\u00a2",         fontSize: 16, color: "#ff0000", fontFamily: "Press Start 2P" },
     { type: "text", x: 30, y: 75, text: "{tibber_price}",  fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
@@ -52,7 +52,7 @@ export default {
     { type: "line", x1: 162, y1: 84,  x2: 296, y2: 84,  color: "#000000", width: 1 },
 
     // ── Weather (row 0–41) ───────────────────────────────────────────────────
-    { type: "text", x: 167, y: 6,  text: "WEATHER",   fontSize: 16, color: "#000000", fontFamily: "Press Start 2P" },
+    { type: "text", x: 167, y: 6,  text: "WETTER",   fontSize: 16, color: "#000000", fontFamily: "Press Start 2P" },
     { type: "text", x: 167, y: 22, text: "{weather}", fontSize: 16, color: "#000000", fontFamily: "Press Start 2P" },
 
     // ── Power (row 42–83) ────────────────────────────────────────────────────
@@ -62,7 +62,10 @@ export default {
     // ── Clock (row 84–127) — inverted ────────────────────────────────────────
     { type: "rect", x: 162, y: 84, w: 134, h: 44, fill: "#000000" },
     { type: "text", x: 167, y: 90,  text: "TIME",    fontSize: 8,  color: "#ffffff", fontFamily: "Press Start 2P" },
-    { type: "text", x: 167, y: 106, text: "{clock}", fontSize: 16, color: "#ffffff", fontFamily: "Press Start 2P" },
+    { type: "text", x: 167, y: 106, text: "{clock}", fontSize: 16, color: "#ffffff", fontFamily: "Press Start 2P",
+      modifier: () => ({
+        text: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),
+      }) },
 
   ],
 };
