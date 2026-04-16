@@ -15,6 +15,25 @@ const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos
 const escapeXml = s => String(s).replace(/[&<>"']/g, c => ESC[c]);
 
 /**
+ * Apply a widget's compiled modifier (if any) to produce a resolved widget config.
+ * Returns a shallow-merged copy with any overrides the modifier returns.
+ * Falls back to the original widget on error.
+ * @param {import('./layout.js').Widget} widget
+ * @param {Record<string, string>} data
+ * @returns {import('./layout.js').Widget}
+ */
+function applyModifier(widget, data) {
+  if (!widget._modifier) return widget;
+  try {
+    const overrides = widget._modifier(widget, data);
+    return { ...widget, ...overrides };
+  } catch (err) {
+    console.warn(`[ink-board] modifier error on widget (type=${widget.type}): ${err.message}`);
+    return widget;
+  }
+}
+
+/**
  * Interpolate {key} placeholders in a text string using the data context.
  * @param {string} template
  * @param {Record<string, string>} data
@@ -37,31 +56,32 @@ export function layoutToSvg(layout, data) {
   ];
 
   for (const w of layout.widgets) {
-    switch (w.type) {
+    const widget = applyModifier(w, data);
+    switch (widget.type) {
       case 'rect': {
-        const fill   = w.fill   ?? 'none';
-        const stroke = w.stroke ?? 'none';
-        const sw     = w.strokeWidth ?? 1;
+        const fill   = widget.fill   ?? 'none';
+        const stroke = widget.stroke ?? 'none';
+        const sw     = widget.strokeWidth ?? 1;
         lines.push(
-          `  <rect x="${w.x}" y="${w.y}" width="${w.w}" height="${w.h}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`
+          `  <rect x="${widget.x}" y="${widget.y}" width="${widget.w}" height="${widget.h}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`
         );
         break;
       }
       case 'line': {
-        const color = w.color ?? '#000000';
-        const width = w.width ?? 1;
+        const color = widget.color ?? '#000000';
+        const width = widget.width ?? 1;
         lines.push(
-          `  <line x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}" stroke="${color}" stroke-width="${width}"/>`
+          `  <line x1="${widget.x1}" y1="${widget.y1}" x2="${widget.x2}" y2="${widget.y2}" stroke="${color}" stroke-width="${width}"/>`
         );
         break;
       }
       case 'text': {
-        const color  = w.color ?? '#000000';
-        const bold   = w.bold ? 'bold' : 'normal';
-        const family = w.fontFamily ?? 'monospace';
-        const value  = escapeXml(interpolate(w.text, data));
+        const color  = widget.color ?? '#000000';
+        const bold   = widget.bold ? 'bold' : 'normal';
+        const family = widget.fontFamily ?? 'monospace';
+        const value  = escapeXml(interpolate(widget.text, data));
         lines.push(
-          `  <text x="${w.x}" y="${w.y}" font-family="${family}" font-size="${w.fontSize}" font-weight="${bold}" fill="${color}" dominant-baseline="text-before-edge">${value}</text>`
+          `  <text x="${widget.x}" y="${widget.y}" font-family="${family}" font-size="${widget.fontSize}" font-weight="${bold}" fill="${color}" dominant-baseline="text-before-edge">${value}</text>`
         );
         break;
       }
@@ -91,37 +111,38 @@ export function layoutToPng(layout, data) {
   ctx.fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
   for (const w of layout.widgets) {
-    switch (w.type) {
+    const widget = applyModifier(w, data);
+    switch (widget.type) {
       case 'rect': {
-        if (w.fill) {
-          ctx.fillStyle = w.fill;
-          ctx.fillRect(w.x, w.y, w.w, w.h);
+        if (widget.fill) {
+          ctx.fillStyle = widget.fill;
+          ctx.fillRect(widget.x, widget.y, widget.w, widget.h);
         }
-        if (w.stroke) {
-          ctx.strokeStyle = w.stroke;
-          ctx.lineWidth   = w.strokeWidth ?? 1;
-          ctx.strokeRect(w.x, w.y, w.w, w.h);
+        if (widget.stroke) {
+          ctx.strokeStyle = widget.stroke;
+          ctx.lineWidth   = widget.strokeWidth ?? 1;
+          ctx.strokeRect(widget.x, widget.y, widget.w, widget.h);
         }
         break;
       }
       case 'line': {
-        ctx.strokeStyle = w.color ?? '#000000';
-        ctx.lineWidth   = w.width ?? 1;
+        ctx.strokeStyle = widget.color ?? '#000000';
+        ctx.lineWidth   = widget.width ?? 1;
         ctx.beginPath();
-        ctx.moveTo(w.x1, w.y1);
-        ctx.lineTo(w.x2, w.y2);
+        ctx.moveTo(widget.x1, widget.y1);
+        ctx.lineTo(widget.x2, widget.y2);
         ctx.stroke();
         break;
       }
       case 'text': {
-        const bold   = w.bold ? 'bold ' : '';
-        const family = w.fontFamily ?? 'monospace';
+        const bold   = widget.bold ? 'bold ' : '';
+        const family = widget.fontFamily ?? 'monospace';
         // Quote family names that contain spaces (CSS font shorthand requirement)
         const quotedFamily = family.includes(' ') ? `"${family}"` : family;
-        ctx.font         = `${bold}${w.fontSize}px ${quotedFamily}`;
-        ctx.fillStyle    = w.color ?? '#000000';
+        ctx.font         = `${bold}${widget.fontSize}px ${quotedFamily}`;
+        ctx.fillStyle    = widget.color ?? '#000000';
         ctx.textBaseline = 'top';
-        ctx.fillText(interpolate(w.text, data), w.x, w.y);
+        ctx.fillText(interpolate(widget.text, data), widget.x, widget.y);
         break;
       }
     }

@@ -1,6 +1,7 @@
-// Loads and validates a JSON5 layout file.
+// Loads and validates a layout file (.js or .json5).
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, extname } from 'path';
+import { pathToFileURL } from 'url';
 import JSON5 from 'json5';
 
 export const DISPLAY_WIDTH  = 296;
@@ -17,6 +18,26 @@ function assertColor(val, label) {
 function validateWidget(w, i) {
   const label = `widgets[${i}]`;
   if (!VALID_TYPES.has(w.type)) throw new Error(`${label}: unknown type "${w.type}"`);
+
+  if (w.modifier != null) {
+    if (typeof w.modifier === 'function') {
+      // Native function from a .js layout — use directly.
+      w._modifier = w.modifier;
+    } else if (typeof w.modifier === 'string') {
+      // String form from a .json5 layout — compile at load time.
+      try {
+        // eslint-disable-next-line no-new-func
+        w._modifier = new Function(`return (${w.modifier})`)();
+        if (typeof w._modifier !== 'function') {
+          throw new TypeError('modifier did not evaluate to a function');
+        }
+      } catch (err) {
+        throw new Error(`${label}: modifier failed to compile: ${err.message}`);
+      }
+    } else {
+      throw new Error(`${label}: modifier must be a function or a function string`);
+    }
+  }
 
   switch (w.type) {
     case 'rect':
@@ -47,6 +68,9 @@ function validateWidget(w, i) {
 /**
  * @typedef {Object} Widget
  * @property {'rect'|'line'|'text'} type
+ * @property {((widget: Widget, vars: Record<string, string>) => Partial<Widget>) | string} [modifier]
+ *   Optional function (or function string for JSON5 layouts) that receives the widget config and
+ *   data variables, and returns an object of property overrides applied before rendering.
  */
 
 /**
@@ -56,13 +80,21 @@ function validateWidget(w, i) {
  */
 
 /**
- * Load and validate a JSON5 layout file.
- * @param {string} layoutPath  absolute path to the layout JSON5 file
- * @returns {Layout}
+ * Load and validate a layout file. Supports .js (ES module) and .json5 formats.
+ * @param {string} layoutPath  absolute path to the layout file
+ * @returns {Promise<Layout>}
  */
-export function loadLayout(layoutPath) {
-  const raw = readFileSync(resolve(layoutPath), 'utf8');
-  const layout = JSON5.parse(raw);
+export async function loadLayout(layoutPath) {
+  const abs = resolve(layoutPath);
+  let layout;
+
+  if (extname(abs) === '.js') {
+    const mod = await import(pathToFileURL(abs).href);
+    layout = mod.default ?? mod;
+  } else {
+    const raw = readFileSync(abs, 'utf8');
+    layout = JSON5.parse(raw);
+  }
 
   assertColor(layout.background ?? '#ffffff', 'layout.background');
 

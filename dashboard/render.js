@@ -53,7 +53,7 @@ async function main() {
   }
 
   const layoutPath = resolve(config.configDir, config.device.layout);
-  const layout = loadLayout(layoutPath);
+  const layout = await loadLayout(layoutPath);
   console.log(`[layout]   ${layout.widgets.length} widgets loaded`);
 
   console.log('[render]   generating SVG…');

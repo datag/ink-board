@@ -9,8 +9,8 @@
     // Directory where data-source programs drop their *.json / *.txt files
     data_dir: "/home/user/.local/share/ink-board/data",
 
-    // Path to the layout JSON5 file, relative to this config file
-    layout: "layouts/dashboard.example.layout.json5",
+    // Path to the layout JS file, relative to this config file
+    layout: "layouts/dashboard.example.layout.js",
   },
 
   // Each entry defines one data source and how to extract a value from it.
