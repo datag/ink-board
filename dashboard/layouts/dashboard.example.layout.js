@@ -38,7 +38,7 @@ export default {
     { type: "text", x: 30, y: 75, text: "{tibber_price}",  fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
       modifier: (widget, vars) => {
         const n = Number(vars.tibber_price);
-        return isNaN(n) ? {} : { text: (n * 100).toFixed(1) };
+        return isNaN(n) ? {} : { text: (n * 100).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) };
       } },
     // Power in watts
     { type: "text", x: 8, y: 100, text: "{tibber_power}", fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
@@ -56,7 +56,7 @@ export default {
     { type: "text", x: 167, y: 24, text: "{weather}",     fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
       modifier: (widget, vars) => {
         const n = Number(vars.weather);
-        return isNaN(n) ? {} : { text: `${n}\u00b0C` };
+        return isNaN(n) ? {} : { text: n.toLocaleString('de-DE', { maximumFractionDigits: 1 }) + '\u00b0C' };
       } },
     { type: "text", x: 167, y: 42, text: "{weather_cond}", fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },
 
@@ -65,7 +65,7 @@ export default {
 
     // ── Clock — inverted ────────────────────────────────────────
     { type: "rect", x: 162, y: 84, w: 134, h: 44, fill: "#000000" },
-    { type: "text", x: 167, y: 90,  text: "TIME",    fontSize: 8,  color: "#ffffff", fontFamily: "Press Start 2P" },
+    { type: "text", x: 167, y: 90,  text: "UPDATED",    fontSize: 8,  color: "#ffffff", fontFamily: "Press Start 2P" },
     { type: "text", x: 167, y: 106, text: "{clock}", fontSize: 16, color: "#ffffff", fontFamily: "Press Start 2P",
       modifier: () => ({
         text: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),
