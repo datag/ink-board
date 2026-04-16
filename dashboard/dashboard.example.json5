@@ -13,6 +13,16 @@
     layout: "layouts/dashboard.example.layout.js",
   },
 
+  // ── Script config ────────────────────────────────────────────────────
+  scripts: {
+
+    tibber: {
+      // Personal access token from https://developer.tibber.com/settings/access-token
+      access_token: "your-tibber-access-token-here",
+    },
+
+  },
+
   // Each entry defines one data source and how to extract a value from it.
   // The `id` becomes the key referenced as {id} in the layout's text widgets.
   sources: [
@@ -45,6 +55,25 @@
       file: "clock.txt",
       max_age: 120,
       stale_placeholder: "--:--",
+    },
+
+    // ── Tibber ────────────────────────────────────────────────────────────────
+    // Written by: node scripts/tibber.js  (run via cron, e.g. every minute)
+
+    {
+      id: "tibber_price",       // current spot price in your currency
+      file: "tibber_price.json",
+      key: "total",
+      max_age: 3600,
+      stale_placeholder: "—",
+    },
+
+    {
+      id: "tibber_power",       // live power draw in watts (requires Tibber Pulse)
+      file: "tibber_power.json",
+      key: "power",
+      max_age: 120,
+      stale_placeholder: "—",
     },
 
   ],
