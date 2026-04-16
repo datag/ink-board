@@ -21,6 +21,11 @@
       access_token: "your-tibber-access-token-here",
     },
 
+    binance: {
+      // Optional Binance API key. Set to null for unauthenticated requests (rate limit applies).
+      api_key: null,
+    },
+
   },
 
   // Each entry defines one data source and how to extract a value from it.
@@ -29,7 +34,8 @@
 
     {
       id: "btc",
-      file: "btc.json",
+      // Written by: node scripts/binance.js BTCUSDT  (run via cron, e.g. every 5 minutes)
+      file: "binance_btcusdt.json",
       key: "price",
       max_age: 300,
       stale_placeholder: "—",
