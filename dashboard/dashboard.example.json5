@@ -30,6 +30,13 @@
       symbol: "BTCUSDT",
     },
 
+    weather: {
+      enabled: true,
+      // Coordinates for Open-Meteo (free, no API key)
+      lat: 48.137154,
+      lon: 11.576124,
+    },
+
   },
 
   // Each entry defines one data source and how to extract a value from it.
@@ -47,8 +54,17 @@
 
     {
       id: "weather",
+      // Written by: node scripts/weather.js  (run via cron, e.g. every 15 minutes)
       file: "weather.json",
       key: "temp_c",
+      max_age: 1800,
+      stale_placeholder: "—",
+    },
+
+    {
+      id: "weather_cond",
+      file: "weather.json",
+      key: "description",
       max_age: 1800,
       stale_placeholder: "—",
     },

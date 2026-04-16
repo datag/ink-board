@@ -52,8 +52,13 @@ export default {
     { type: "line", x1: 162, y1: 84,  x2: 296, y2: 84,  color: "#000000", width: 1 },
 
     // ── Weather (row 0–41) ───────────────────────────────────────────────────
-    { type: "text", x: 167, y: 6,  text: "WETTER",   fontSize: 16, color: "#000000", fontFamily: "Press Start 2P" },
-    { type: "text", x: 167, y: 22, text: "{weather}", fontSize: 16, color: "#000000", fontFamily: "Press Start 2P" },
+    { type: "text", x: 167, y: 2,  text: "WETTER",        fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
+    { type: "text", x: 167, y: 13, text: "{weather}",     fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
+      modifier: (widget, vars) => {
+        const n = Number(vars.weather);
+        return isNaN(n) ? {} : { text: `${n}\u00b0C` };
+      } },
+    { type: "text", x: 167, y: 32, text: "{weather_cond}", fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },
 
     // ── Power (row 42–83) ────────────────────────────────────────────────────
     { type: "text", x: 167, y: 48, text: "SOMETHING", fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
