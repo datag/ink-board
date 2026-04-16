@@ -48,23 +48,22 @@ export default {
       } },
 
     // ── Right column dividers ────────────────────────────────────────────────
-    { type: "line", x1: 162, y1: 42,  x2: 296, y2: 42,  color: "#000000", width: 1 },
+    { type: "line", x1: 162, y1: 60,  x2: 296, y2: 60,  color: "#000000", width: 1 },
     { type: "line", x1: 162, y1: 84,  x2: 296, y2: 84,  color: "#000000", width: 1 },
 
-    // ── Weather (row 0–41) ───────────────────────────────────────────────────
-    { type: "text", x: 167, y: 2,  text: "WETTER",        fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
-    { type: "text", x: 167, y: 13, text: "{weather}",     fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
+    // ── Weather ───────────────────────────────────────────────────
+    { type: "text", x: 167, y: 8,  text: "WETTER",        fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
+    { type: "text", x: 167, y: 24, text: "{weather}",     fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
       modifier: (widget, vars) => {
         const n = Number(vars.weather);
         return isNaN(n) ? {} : { text: `${n}\u00b0C` };
       } },
-    { type: "text", x: 167, y: 32, text: "{weather_cond}", fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },
+    { type: "text", x: 167, y: 42, text: "{weather_cond}", fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },
 
-    // ── Power (row 42–83) ────────────────────────────────────────────────────
-    { type: "text", x: 167, y: 48, text: "SOMETHING", fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
-    { type: "text", x: 167, y: 64, text: "{power}",    fontSize: 16, color: "#000000", fontFamily: "Press Start 2P" },
+    // ── Power ────────────────────────────────────────────────────
+    { type: "text", x: 167, y: 67, text: "{irgendwas}", fontSize: 8,  color: "#ff0000", fontFamily: "Press Start 2P" },
 
-    // ── Clock (row 84–127) — inverted ────────────────────────────────────────
+    // ── Clock — inverted ────────────────────────────────────────
     { type: "rect", x: 162, y: 84, w: 134, h: 44, fill: "#000000" },
     { type: "text", x: 167, y: 90,  text: "TIME",    fontSize: 8,  color: "#ffffff", fontFamily: "Press Start 2P" },
     { type: "text", x: 167, y: 106, text: "{clock}", fontSize: 16, color: "#ffffff", fontFamily: "Press Start 2P",
