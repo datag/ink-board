@@ -27,13 +27,3 @@ node render.js --config dashboard.json5 --dry-run
 > [!NOTE]
 > Requires ImageMagick to be installed and available in the PATH.
 > `sudo apt install imagemagick`
-
-## Fonts
-
-### Press Start 2P
-
-https://fonts.google.com/specimen/Press+Start+2P
-
-```shell
-curl -L "https://github.com/google/fonts/raw/main/ofl/pressstart2p/PressStart2P-Regular.ttf" -o fonts/PressStart2P-Regular.ttf
-```
