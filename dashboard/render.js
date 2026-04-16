@@ -58,13 +58,13 @@ async function main() {
 
   console.log('[render]   generating SVG…');
   const svg = layoutToSvg(layout, data);
-  const debugSvg = resolve(HERE, 'debug.svg');
+  const debugSvg = resolve(config.device.data_dir, 'debug.svg');
   writeFileSync(debugSvg, svg);
   console.log(`[debug]    SVG saved → ${debugSvg}`);
 
   console.log('[render]   rasterising via Cairo (node-canvas)…');
   const pngBuffer = layoutToPng(layout, data);
-  const debugPng = resolve(HERE, 'debug.png');
+  const debugPng = resolve(config.device.data_dir, 'debug.png');
   writeFileSync(debugPng, pngBuffer);
   console.log(`[debug]    PNG saved → ${debugPng} (${pngBuffer.length} bytes)`);
 
