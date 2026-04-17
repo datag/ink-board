@@ -13,6 +13,7 @@ This module renders a tri-color ePaper dashboard image and uploads it to an ink-
 - Dry-run (no upload): `node render.js --config dashboard.json5 --dry-run`
 - Save BMP output: `node render.js --config dashboard.json5 --out out.bmp`
 - Always pass `--config dashboard.json5` explicitly when running render.js.
+- **Always add `--debug`** when running render.js as an agent — this bypasses `max_age` staleness checks so data files are read regardless of age (the flag has no other effect; `max_age` is still required in config).
 - Fetch all enabled data sources: `node fetch.js`
 - Run one data script directly: `node scripts/tibber.js`, `node scripts/binance.js`, `node scripts/weather.js`
 - No automated tests exist yet.
