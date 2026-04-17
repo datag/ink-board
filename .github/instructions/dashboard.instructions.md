@@ -9,10 +9,10 @@ This module renders a tri-color ePaper dashboard image and uploads it to an ink-
 
 ## Build, run, and test commands
 - Install dependencies: `npm install` (from `dashboard/`)
-- Render and upload: `node render.js`
-- Dry-run (no upload): `node render.js --dry-run`
-- Save BMP output: `node render.js --out out.bmp`
-- Custom config: `node render.js --config path/to/dashboard.json5`
+- Render and upload: `node render.js --config dashboard.json5`
+- Dry-run (no upload): `node render.js --config dashboard.json5 --dry-run`
+- Save BMP output: `node render.js --config dashboard.json5 --out out.bmp`
+- Always pass `--config dashboard.json5` explicitly when running render.js.
 - Fetch all enabled data sources: `node fetch.js`
 - Run one data script directly: `node scripts/tibber.js`, `node scripts/binance.js`, `node scripts/weather.js`
 - No automated tests exist yet.
