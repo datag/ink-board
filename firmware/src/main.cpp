@@ -46,7 +46,8 @@ static void renderPlanes() {
     } while (display.nextPage());
 }
 
-static void showText(const char* line1, const char* line2 = nullptr) {
+static void showText(const char* line1, const char* line2 = nullptr,
+                     const char* line3 = nullptr) {
     display.setFullWindow();
     display.firstPage();
     do {
@@ -59,7 +60,24 @@ static void showText(const char* line1, const char* line2 = nullptr) {
             display.setCursor(8, 52);
             display.print(line2);
         }
+        if (line3) {
+            display.setCursor(8, 88);
+            display.print(line3);
+        }
     } while (display.nextPage());
+}
+
+static const char* wifiStatusName(uint8_t status) {
+    switch (status) {
+        case 0:   return "IDLE";
+        case 1:   return "NO_SSID_AVAIL";
+        case 2:   return "SCAN_DONE";
+        case 4:   return "CONNECT_FAILED";
+        case 5:   return "CONN_LOST";
+        case 6:   return "DISCONNECTED";
+        case 255: return "NO_SHIELD";
+        default:  return "UNKNOWN";
+    }
 }
 
 // ── BMP pixel helpers ─────────────────────────────────────────────────────────
@@ -306,14 +324,20 @@ void setup() {
     Serial.println();
 
     if (WiFi.status() != WL_CONNECTED) {
-        showText("WiFi failed!", "Check config.h");
+        uint8_t st = (uint8_t)WiFi.status();
+        char errBuf[32];
+        snprintf(errBuf, sizeof(errBuf), "Err %d: %s", st, wifiStatusName(st));
+        showText("WiFi failed!", errBuf);
         Serial.println("WiFi connection failed!");
         return;
     }
 
     String ip = WiFi.localIP().toString();
-    Serial.printf("Connected! IP: %s  freeHeap=%u\n", ip.c_str(), ESP.getFreeHeap());
-    showText("ink-board ready", ip.c_str());
+    char infoBuf[24];
+    snprintf(infoBuf, sizeof(infoBuf), "%d dBm  CH%d", WiFi.RSSI(), WiFi.channel());
+    Serial.printf("Connected! IP: %s  RSSI: %d dBm  CH%d  freeHeap=%u\n",
+                  ip.c_str(), WiFi.RSSI(), WiFi.channel(), ESP.getFreeHeap());
+    showText("ink-board ready", ip.c_str(), infoBuf);
 
     server.collectHeaders("Content-Length", "Content-Type");
     server.on("/",       HTTP_GET,  handleRoot);
