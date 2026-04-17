@@ -95,9 +95,9 @@
     },
 
     {
-      id: "tibber_power",       // live power draw in watts (requires Tibber Pulse)
+      id: "tibber_power",       // net power in watts: positive = consuming, negative = exporting PV surplus
       file: "tibber_power.json",
-      key: "power",
+      key: "powerNet",
       max_age: 120,
       stale_placeholder: "—",
     },

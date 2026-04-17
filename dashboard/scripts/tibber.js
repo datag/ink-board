@@ -10,7 +10,8 @@
  *
  * Writes:
  *   <data_dir>/tibber_price.json  — { total, level, startsAt }
- *   <data_dir>/tibber_power.json  — { power, accumulatedCost }
+ *   <data_dir>/tibber_power.json  — { power, powerProduction, powerNet, accumulatedCost }
+ *                                    powerNet = power - powerProduction (negative = exporting to grid)
  *
  * Config keys (in dashboard.json5 → scripts.tibber):
  *   access_token  — Tibber personal access token
@@ -103,13 +104,16 @@ function fetchPower(wsUrl, homeId, token) {
             type: 'subscribe',
             id: '1',
             payload: {
-              query: `subscription { liveMeasurement(homeId: "${homeId}") { power accumulatedCost } }`,
+              query: `subscription { liveMeasurement(homeId: "${homeId}") { power powerProduction accumulatedCost } }`,
             },
           }));
           break;
-        case 'next':
-          done(msg.payload.data.liveMeasurement);
+        case 'next': {
+          const lm = msg.payload.data.liveMeasurement;
+          const powerNet = (lm.power ?? 0) - (lm.powerProduction ?? 0);
+          done({ ...lm, powerNet });
           break;
+        }
         case 'error':
           done(null, new Error(`Tibber WS error: ${JSON.stringify(msg.payload)}`));
           break;
@@ -142,7 +146,7 @@ async function main() {
   try {
     const power = await fetchPower(wsUrl, homeId, token);
     writeFileSync(resolve(dataDir, 'tibber_power.json'), JSON.stringify(power));
-    console.log(`[tibber]   power: ${power.power} W, accumulated cost: ${power.accumulatedCost}`);
+    console.log(`[tibber]   power: ${power.powerNet} W net (${power.power} W consumption, ${power.powerProduction ?? 0} W production), accumulated cost: ${power.accumulatedCost}`);
   } catch (err) {
     console.warn(`[tibber]   power skipped: ${err.message}`);
   }

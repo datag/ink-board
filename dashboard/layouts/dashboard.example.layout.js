@@ -40,11 +40,15 @@ export default {
         const n = Number(vars.tibber_price);
         return isNaN(n) ? {} : { text: (n * 100).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) };
       } },
-    // Power in watts
+    // Power in watts — positive = consuming from grid, negative = exporting PV surplus
     { type: "text", x: 8, y: 100, text: "{tibber_power}", fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
       modifier: (widget, vars) => {
         const n = Number(vars.tibber_power);
-        return isNaN(n) ? {} : { text: new Intl.NumberFormat('de-DE').format(Math.round(n)) + ' W' };
+        if (isNaN(n)) return {};
+        return {
+          text: new Intl.NumberFormat('de-DE').format(Math.round(n)) + ' W',
+          color: n < 0 ? '#ff0000' : '#000000',
+        };
       } },
 
     // ── Right column dividers ────────────────────────────────────────────────
