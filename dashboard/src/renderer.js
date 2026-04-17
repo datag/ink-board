@@ -7,9 +7,10 @@ import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from './layout.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-// Register Press Start 2P — pixel font, renders perfectly with antialias='none'.
-// 8px = Adafruit GFX size 1, 16px = Adafruit GFX size 2.
-registerFont(resolve(HERE, '../fonts/PressStart2P-Regular.ttf'), { family: 'Press Start 2P' });
+// Register fonts
+registerFont(resolve(HERE, '../fonts/Press_Start_2P/PressStart2P-Regular.ttf'), { family: 'Press Start 2P' });
+registerFont(resolve(HERE, '../fonts/Yarndings_12/Yarndings12-Regular.ttf'), { family: 'Yarndings 12' });
+registerFont(resolve(HERE, '../fonts/Pixel_Icon_Library/iconfont.ttf'), { family: 'iconfont' });
 
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
 const escapeXml = s => String(s).replace(/[&<>"']/g, c => ESC[c]);

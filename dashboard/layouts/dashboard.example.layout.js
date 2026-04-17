@@ -83,9 +83,6 @@ export default {
       } },
     { type: "text", x: 167, y: 42, text: "{weather_cond}", fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },
 
-    // ── Power ────────────────────────────────────────────────────
-    { type: "text", x: 167, y: 67, text: "{irgendwas}", fontSize: 8,  color: "#ff0000", fontFamily: "Press Start 2P" },
-
     // ── Clock — inverted ────────────────────────────────────────
     { type: "rect", x: 162, y: 84, w: 134, h: 44, fill: "#000000" },
     { type: "text", x: 167, y: 90,  text: "UPDATED",    fontSize: 8,  color: "#ffffff", fontFamily: "Press Start 2P" },
@@ -94,5 +91,8 @@ export default {
         text: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),
       }) },
 
+    // ── Tests ────────────────────────────────────────────────────
+    { type: "text", x: 160, y: 62, text: "{irgendwas}", fontSize: 16,  color: "#ff0000", fontFamily: "Yarndings 12" },
+    { type: "text", x: 268, y: 100, text: "\uF1BE", fontSize: 24,  color: "#ff0000", fontFamily: "iconfont" },
   ],
 };
