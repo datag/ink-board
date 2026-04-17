@@ -33,21 +33,40 @@ export default {
 
     // ── Left column: Tibber ─────────────────────────────────────────────────
     { type: "text", x: 8, y: 60,  text: "STROM",         fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
-    // Price in cents
-    { type: "text", x: 8, y: 75,  text: "\u00a2",         fontSize: 16, color: "#ff0000", fontFamily: "Press Start 2P" },
-    { type: "text", x: 30, y: 75, text: "{tibber_price}",  fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
+    // Price background: black-inverted <=0, red-inverted >=28, else white
+    { type: "rect", x: 2, y: 72, w: 156, h: 26, fill: "#ffffff",
+      modifier: (widget, vars) => {
+        const cents = Number(vars.tibber_price) * 100;
+        if (isNaN(cents)) return {};
+        return { fill: cents <= 0 ? '#000000' : cents >= 28 ? '#ff0000' : '#ffffff' };
+      } },
+    // Price in cents — suffix ¢; fg: white <=0 or >=28, red >=25, else black
+    { type: "text", x: 8, y: 75, text: "{tibber_price}",  fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
       modifier: (widget, vars) => {
         const n = Number(vars.tibber_price);
-        return isNaN(n) ? {} : { text: (n * 100).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) };
+        if (isNaN(n)) return {};
+        const cents = n * 100;
+        const text = cents.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '\u00a2';
+        const color = cents <= 0 || cents >= 28 ? '#ffffff' : cents >= 25 ? '#ff0000' : '#000000';
+        return { text, color };
+      } },
+    // Power background: black-inverted <=0, red-inverted >3000, else white
+    { type: "rect", x: 2, y: 97, w: 156, h: 26, fill: "#ffffff",
+      modifier: (widget, vars) => {
+        const n = Number(vars.tibber_power);
+        if (isNaN(n)) return {};
+        return { fill: n <= 0 ? '#000000' : n > 3000 ? '#ff0000' : '#ffffff' };
       } },
     // Power in watts — positive = consuming from grid, negative = exporting PV surplus
+    // fg: white <=0 or >3000, red >1000, else black
     { type: "text", x: 8, y: 100, text: "{tibber_power}", fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
       modifier: (widget, vars) => {
         const n = Number(vars.tibber_power);
         if (isNaN(n)) return {};
+        const color = n <= 0 || n > 3000 ? '#ffffff' : n > 1000 ? '#ff0000' : '#000000';
         return {
           text: new Intl.NumberFormat('de-DE').format(Math.round(n)) + ' W',
-          color: n < 0 ? '#ff0000' : '#000000',
+          color,
         };
       } },
 
