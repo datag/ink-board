@@ -34,7 +34,7 @@ export default {
     // ── Left column: Tibber ─────────────────────────────────────────────────
     { type: "text", x: 8, y: 60,  text: "STROM",         fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
     // Price background: black-inverted <=0, red-inverted >=28, else white
-    { type: "rect", x: 2, y: 72, w: 156, h: 26, fill: "#ffffff",
+    { type: "rect", x: 2, y: 72, w: 156, h: 22, fill: "#ffffff",
       modifier: (widget, vars) => {
         const cents = Number(vars.tibber_price) * 100;
         if (isNaN(cents)) return {};
@@ -46,12 +46,12 @@ export default {
         const n = Number(vars.tibber_price);
         if (isNaN(n)) return {};
         const cents = n * 100;
-        const text = cents.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '\u00a2';
+        const text = cents.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' \u00a2';
         const color = cents <= 0 || cents >= 28 ? '#ffffff' : cents >= 25 ? '#ff0000' : '#000000';
         return { text, color };
       } },
     // Power background: black-inverted <=0, red-inverted >3000, else white
-    { type: "rect", x: 2, y: 97, w: 156, h: 26, fill: "#ffffff",
+    { type: "rect", x: 2, y: 97, w: 156, h: 22, fill: "#ffffff",
       modifier: (widget, vars) => {
         const n = Number(vars.tibber_power);
         if (isNaN(n)) return {};
