@@ -18,17 +18,20 @@ function getByPath(obj, keyPath) {
  * Read one source file and return its value string, or null if stale/missing.
  * @param {string} dataDir   absolute path to hot-folder
  * @param {import('./config.js').Source} source
+ * @param {boolean} ignoreMaxAge  when true, skip the staleness check
  * @returns {string|null}
  */
-function readSource(dataDir, source) {
+function readSource(dataDir, source, ignoreMaxAge = false) {
   const filePath = resolve(dataDir, source.file);
 
   if (!existsSync(filePath)) return null;
 
-  // Staleness check
-  const mtimeMs = statSync(filePath).mtimeMs;
-  const ageSeconds = (Date.now() - mtimeMs) / 1000;
-  if (ageSeconds > source.max_age) return null;
+  // Staleness check (skipped in debug mode)
+  if (!ignoreMaxAge) {
+    const mtimeMs = statSync(filePath).mtimeMs;
+    const ageSeconds = (Date.now() - mtimeMs) / 1000;
+    if (ageSeconds > source.max_age) return null;
+  }
 
   const content = readFileSync(filePath, 'utf8').trim();
 
@@ -55,12 +58,13 @@ function readSource(dataDir, source) {
  * Load all sources and return a data context object:
  *   { <source.id>: <value string or placeholder> }
  * @param {import('./config.js').Config} config
+ * @param {boolean} [ignoreMaxAge=false]  skip staleness checks when true
  * @returns {Record<string, string>}
  */
-export function loadData(config) {
+export function loadData(config, ignoreMaxAge = false) {
   const context = {};
   for (const source of config.sources) {
-    const value = readSource(config.device.data_dir, source);
+    const value = readSource(config.device.data_dir, source, ignoreMaxAge);
     context[source.id] = value ?? (source.stale_placeholder ?? DEFAULT_PLACEHOLDER);
   }
   return context;

@@ -3,11 +3,12 @@
  * ink-board dashboard renderer
  *
  * Usage:
- *   node render.js [--config <path>] [--dry-run] [--out <path>]
+ *   node render.js [--config <path>] [--dry-run] [--debug] [--out <path>]
  *
  * Options:
  *   --config <path>   Path to dashboard.json5 (default: dashboard.json5 next to this file)
  *   --dry-run         Render and convert, but skip the upload
+ *   --debug           Ignore max_age staleness checks (data files are always read)
  *   --out <path>      Save a copy of the generated BMP to <path>
  */
 import { writeFileSync } from 'fs';
@@ -24,14 +25,15 @@ import { uploadBmp }    from './src/uploader.js';
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 function parseArgs(argv) {
-  const args = { config: resolve(HERE, 'dashboard.json5'), dryRun: false, out: null };
+  const args = { config: resolve(HERE, 'dashboard.json5'), dryRun: false, debug: false, out: null };
   for (let i = 0; i < argv.length; i++) {
     switch (argv[i]) {
       case '--config':  args.config  = resolve(argv[++i]); break;
       case '--dry-run': args.dryRun  = true;               break;
+      case '--debug':   args.debug   = true;               break;
       case '--out':     args.out     = resolve(argv[++i]); break;
       case '--help': case '-h':
-        console.log('Usage: node render.js [--config dashboard.json5] [--dry-run] [--out out.bmp]');
+        console.log('Usage: node render.js [--config dashboard.json5] [--dry-run] [--debug] [--out out.bmp]');
         process.exit(0);
     }
   }
@@ -47,7 +49,8 @@ async function main() {
   console.log(`[layout]   ${config.device.layout}`);
 
   console.log('[data]     loading sources…');
-  const data = loadData(config);
+  if (args.debug) console.log('[debug]    max_age ignored — all present data files will be read');
+  const data = loadData(config, args.debug);
   for (const [id, val] of Object.entries(data)) {
     console.log(`           ${id} = ${val}`);
   }
