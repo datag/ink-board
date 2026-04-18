@@ -22,6 +22,10 @@ export function imageDataToBmp(imageData) {
     // Luminance < 128 -> black
     const lum = 0.299 * r + 0.587 * g + 0.114 * b;
     if (lum < 128) return 0;
+    // Gray rule: channels are close to each other and mid-range -> red
+    const maxCh = Math.max(r, g, b);
+    const minCh = Math.min(r, g, b);
+    if (maxCh - minCh < 40 && lum < 220) return 2;
     return 1; // white
   }
 
