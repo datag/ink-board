@@ -19,7 +19,7 @@ import { loadConfig }   from './src/config.js';
 import { loadData }     from './src/dataLoader.js';
 import { loadLayout }   from './src/layout.js';
 import { layoutToSvg } from './src/renderer.js';
-import { pngToBmp, svgToPng }     from './src/converter.js';
+import { renderSvgToCanvas, canvasToBmp, svgToPng } from './src/converter.js';
 import { uploadBmp }    from './src/uploader.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -65,15 +65,17 @@ async function main() {
   writeFileSync(debugSvg, svg);
   console.log(`[debug]    SVG saved → ${debugSvg}`);
 
-  console.log('[render]   converting SVG → PNG (debug.png)...');
-  const pngBuffer = await svgToPng(svg);
+  console.log('[render]   rasterising SVG to canvas...');
+  const canvas = await renderSvgToCanvas(svg);
   const debugPng = resolve(config.device.data_dir, 'debug.png');
+  // Save PNG debug output by default (can be skipped later via --no-debug flag)
+  const pngBuffer = canvas.toBuffer('image/png');
   writeFileSync(debugPng, pngBuffer);
   console.log(`[debug]    PNG saved → ${debugPng} (${pngBuffer.length} bytes)`);
 
-  console.log('[convert]  running png2bmp.sh --4bit…');
+  console.log('[convert]  converting canvas → BMP (4-bit)…');
   const t0 = Date.now();
-  const bmpBuffer = await pngToBmp(pngBuffer);
+  const bmpBuffer = await canvasToBmp(canvas);
   console.log(`[convert]  done in ${Date.now()-t0}ms (${bmpBuffer.length} bytes BMP)`);
 
   if (args.out) {
