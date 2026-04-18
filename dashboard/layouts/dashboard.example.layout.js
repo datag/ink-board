@@ -20,16 +20,16 @@ export default {
     { type: "line", x1: 160, y1: 0, x2: 160, y2: 128, color: "#000000", width: 2 },
 
     // ── Left column: BTC ────────────────────────────────────────────────────
-    { type: "text", x: 8,  y: 8,   text: "BTC",   fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
-    { type: "text", x: 8,  y: 26,  text: "$",      fontSize: 16,  color: "#ff0000", fontFamily: "Press Start 2P" },
-    { type: "text", x: 30, y: 26,  text: "{btc}",  fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
+    { type: "text", x: 4,  y: 4,   text: "\uF108", fontSize: 24,  color: "#ff0000", fontFamily: "iconfont" },
+    { type: "text", x: 33, y: 10,  text: "$",  fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },
+    { type: "text", x: 41, y: 10,  text: "{btc}",  fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
       modifier: (widget, vars) => {
         const n = Number(vars.btc);
         return isNaN(n) ? {} : { text: new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(n) };
       }
     },
 
-    { type: "line", x1: 0, y1: 50, x2: 159, y2: 50, color: "#000000", width: 1 },
+    { type: "line", x1: 0, y1: 43, x2: 159, y2: 43, color: "#000000", width: 1 },
 
     // ── Left column: Tibber ─────────────────────────────────────────────────
     { type: "text", x: 8, y: 60,  text: "STROM",         fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
@@ -81,10 +81,10 @@ export default {
         const n = Number(vars.weather);
         return isNaN(n) ? {} : { text: n.toLocaleString('de-DE', { maximumFractionDigits: 1 }) + '\u00b0C' };
       } },
-    { type: "text", x: 167, y: 42, text: "{weather_cond}", fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },
+    { type: "text", x: 167, y: 44, text: "{weather_cond}", fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },
 
     // ── Clock — inverted ────────────────────────────────────────
-    { type: "rect", x: 162, y: 84, w: 134, h: 44, fill: "#000000" },
+    { type: "rect", x: 162, y: 84, w: 100, h: 44, fill: "#000000" },
     { type: "text", x: 167, y: 90,  text: "UPDATED",    fontSize: 8,  color: "#ffffff", fontFamily: "Press Start 2P" },
     { type: "text", x: 167, y: 106, text: "{clock}", fontSize: 16, color: "#ffffff", fontFamily: "Press Start 2P",
       modifier: () => ({
@@ -92,7 +92,7 @@ export default {
       }) },
 
     // ── Tests ────────────────────────────────────────────────────
-    { type: "text", x: 160, y: 62, text: "{irgendwas}", fontSize: 16,  color: "#ff0000", fontFamily: "Yarndings 12" },
-    { type: "text", x: 268, y: 100, text: "\uF1BE", fontSize: 24,  color: "#ff0000", fontFamily: "iconfont" },
+    { type: "text", x: 170, y: 64, text: "[uwxyz{q", fontSize: 16,  color: "#000000", fontFamily: "Yarndings 12" },
+    { type: "text", x: 268, y: 95, text: "\uF1BE", fontSize: 24,  color: "#ff0000", fontFamily: "iconfont" },
   ],
 };

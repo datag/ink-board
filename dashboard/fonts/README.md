@@ -46,6 +46,7 @@ Copyright Notice:
 Open-source collection of Pixelated Icons
 * 24px
 * Private Use Area (PUA), e.g. Code point \uF108 for Bitcoin icon
+* PUA mapping: https://github.com/hackernoon/pixel-icon-library/blob/main/fonts/iconfont.css
 
 https://pixeliconlibrary.com/
 

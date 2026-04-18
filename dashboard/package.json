@@ -5,7 +5,8 @@
   "main": "render.js",
   "type": "module",
   "scripts": {
-    "render": "node render.js"
+    "render": "node render.js",
+    "preview": "node render.js --debug --dry-run && open data/debug.png"
   },
   "engines": {
     "node": ">=18"
