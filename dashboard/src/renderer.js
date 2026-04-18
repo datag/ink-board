@@ -44,20 +44,6 @@ function interpolate(template, data) {
 }
 
 /**
- * Map canvas textAlign to SVG text-anchor.
- * @param {string} textAlign - Canvas textAlign value ('start', 'center', 'right')
- * @returns {string} SVG text-anchor value ('start', 'middle', 'end')
- */
-function canvasAlignToSvgAnchor(textAlign) {
-  const mapping = {
-    'start': 'start',
-    'center': 'middle',
-    'right': 'end'
-  };
-  return mapping[textAlign] ?? 'start';
-}
-
-/**
  * Convert a validated layout + data context to an SVG string (for debug.svg).
  * @param {import('./layout.js').Layout} layout
  * @param {Record<string, string>} data
@@ -94,10 +80,10 @@ export function layoutToSvg(layout, data) {
         const color  = widget.color ?? '#000000';
         const bold   = widget.bold ? 'bold' : 'normal';
         const family = widget.fontFamily ?? 'monospace';
-        const textAlign = canvasAlignToSvgAnchor(widget.textAlign ?? 'start');
+        const textAnchor = widget.textAnchor ?? 'start';
         const value  = escapeXml(interpolate(widget.text, data));
         lines.push(
-          `  <text x="${widget.x}" y="${widget.y}" font-family="${family}" font-size="${widget.fontSize}" font-weight="${bold}" fill="${color}" dominant-baseline="text-before-edge" text-anchor="${textAlign}">${value}</text>`
+          `  <text x="${widget.x}" y="${widget.y}" font-family="${family}" font-size="${widget.fontSize}" font-weight="${bold}" fill="${color}" text-anchor="${textAnchor}" dominant-baseline="text-before-edge">${value}</text>`
         );
         break;
       }
