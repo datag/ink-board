@@ -143,6 +143,7 @@ export function layoutToPng(layout, data) {
         ctx.font         = `${bold}${widget.fontSize}px ${quotedFamily}`;
         ctx.fillStyle    = widget.color ?? '#000000';
         ctx.textBaseline = 'top';
+        ctx.textAlign = widget.textAlign ?? 'start';
         ctx.fillText(interpolate(widget.text, data), widget.x, widget.y);
         break;
       }
