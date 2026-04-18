@@ -11,6 +11,8 @@
 //   Left  (0–159 px):  BTC price (top) / Tibber price+power (bottom)
 //   Right (160–295 px): weather / power / clock (stacked, 3×42 px rows)
 
+import { lookupWeatherIcon, pickCodePoint } from "../src/weatherIconMap.js";
+
 export default {
   background: "#ffffff",
 
@@ -106,17 +108,29 @@ export default {
       }
     },
 
-    // ── Right column dividers ────────────────────────────────────────────────
-    { type: "line", x1: 162, y1: 60,  x2: 296, y2: 60,  color: "#000000", width: 1 },
-
     // ── Weather ───────────────────────────────────────────────────
-    { type: "text", x: 167, y: 8,  text: "WETTER",        fontSize: 8,  color: "#000000", fontFamily: "Press Start 2P" },
-    { type: "text", x: 167, y: 24, text: "{weather}",     fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
+    { type: "text", x: 294, y: 1, text: "\uF010", fontSize: 20,  color: "#000000", fontFamily: "Weather Icons", textAnchor: "end",
+      modifier: (widget, vars) => {
+        const codeNum = Number(vars.weather_code);
+        if (isNaN(codeNum)) return {};
+        const entry = lookupWeatherIcon(codeNum);
+        if (!entry) return { text: '?', color: '#ff0000' };
+        const { codePoint, isNight, isDangerous } = pickCodePoint(entry, new Date(), 'Europe/Berlin');
+        if (!codePoint) return {};
+        // Red-inverted styling when dangerous: text red on black background
+        if (isDangerous) return { text: codePoint, color: '#ff0000', fill: '#000000' };
+        return { text: codePoint };
+      }
+    },
+    { type: "text", x: 165, y: 15, text: "{weather}",     fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
       modifier: (widget, vars) => {
         const n = Number(vars.weather);
         return isNaN(n) ? {} : { text: n.toLocaleString('de-DE', { maximumFractionDigits: 1 }) + '\u00b0C' };
       } },
-    { type: "text", x: 167, y: 44, text: "{weather_cond}", fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },
+    { type: "text", x: 167, y: 40, text: "{weather_cond}", fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },
+
+    // ── Right column dividers ────────────────────────────────────────────────
+    { type: "line", x1: 160, y1: 59,  x2: 296, y2: 59,  color: "#000000", width: 1 },
 
     // ── Last update ────────────────────────────────────────
     { type: "rect", x: 227, y: 110, w: 67, h: 17, fill: "#000000" },
