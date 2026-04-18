@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "render": "node render.js",
-    "preview": "node render.js --debug --dry-run && open data/debug.png"
+    "preview": "node render.js --debug --svg --png --bmp --dry-run && open data/dashboard.png"
   },
   "engines": {
     "node": ">=18"

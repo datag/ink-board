@@ -3,13 +3,15 @@
  * ink-board dashboard renderer
  *
  * Usage:
- *   node render.js [--config <path>] [--dry-run] [--debug] [--out <path>]
+ *   node render.js [--config <path>] [--dry-run] [--debug] [--svg[=path]] [--png[=path]] [--bmp[=path]]
  *
  * Options:
  *   --config <path>   Path to dashboard.json5 (default: dashboard.json5 next to this file)
  *   --dry-run         Render and convert, but skip the upload
  *   --debug           Ignore max_age staleness checks (data files are always read)
- *   --out <path>      Save a copy of the generated BMP to <path>
+ *   --svg[=path]      Write SVG: bare flag -> data_dir/dashboard.svg; or provide path
+ *   --png[=path]      Write PNG: bare flag -> data_dir/dashboard.png; or provide path
+ *   --bmp[=path]      Write BMP: bare flag -> data_dir/dashboard.bmp; or provide path
  */
 import { writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
@@ -19,21 +21,55 @@ import { loadConfig }   from './src/config.js';
 import { loadData }     from './src/dataLoader.js';
 import { loadLayout }   from './src/layout.js';
 import { layoutToSvg } from './src/renderer.js';
-import { renderSvgToCanvas, canvasToBmp, svgToPng } from './src/converter.js';
+import { renderSvgToCanvas, canvasToBmp, canvasToPng, svgToPng } from './src/converter.js';
 import { uploadBmp }    from './src/uploader.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 function parseArgs(argv) {
-  const args = { config: resolve(HERE, 'dashboard.json5'), dryRun: false, debug: false, out: null };
+  const args = {
+    config: resolve(HERE, 'dashboard.json5'),
+    dryRun: false,
+    debug: false,
+    svgOut: null, // null = not requested, true = save to data_dir/dashboard.svg, string = explicit path
+    pngOut: null,
+    bmpOut: null
+  };
+
   for (let i = 0; i < argv.length; i++) {
-    switch (argv[i]) {
+    const arg = argv[i];
+    if (arg.startsWith('--svg=')) {
+      args.svgOut = resolve(arg.split('=')[1]);
+      continue;
+    }
+    if (arg.startsWith('--png=')) {
+      args.pngOut = resolve(arg.split('=')[1]);
+      continue;
+    }
+    if (arg.startsWith('--bmp=')) {
+      args.bmpOut = resolve(arg.split('=')[1]);
+      continue;
+    }
+
+    switch (arg) {
       case '--config':  args.config  = resolve(argv[++i]); break;
       case '--dry-run': args.dryRun  = true;               break;
       case '--debug':   args.debug   = true;               break;
-      case '--out':     args.out     = resolve(argv[++i]); break;
+
+      case '--svg':
+        if (argv[i+1] && !argv[i+1].startsWith('--')) args.svgOut = resolve(argv[++i]);
+        else args.svgOut = true;
+        break;
+      case '--png':
+        if (argv[i+1] && !argv[i+1].startsWith('--')) args.pngOut = resolve(argv[++i]);
+        else args.pngOut = true;
+        break;
+      case '--bmp':
+        if (argv[i+1] && !argv[i+1].startsWith('--')) args.bmpOut = resolve(argv[++i]);
+        else args.bmpOut = true;
+        break;
       case '--help': case '-h':
-        console.log('Usage: node render.js [--config dashboard.json5] [--dry-run] [--debug] [--out out.bmp]');
+        console.log('Usage: node render.js [--config dashboard.json5] [--dry-run] [--debug] [--svg[=path]] [--png[=path]] [--bmp[=path]]');
         process.exit(0);
     }
   }
@@ -61,26 +97,35 @@ async function main() {
 
   console.log('[render]   generating SVG…');
   const svg = layoutToSvg(layout, data);
-  const debugSvg = resolve(config.device.data_dir, 'debug.svg');
-  writeFileSync(debugSvg, svg);
-  console.log(`[debug]    SVG saved → ${debugSvg}`);
+
+  // Optional: write SVG to disk when requested (--svg)
+  if (args.svgOut) {
+    const svgPath = typeof args.svgOut === 'string' ? args.svgOut : resolve(config.device.data_dir, 'dashboard.svg');
+    writeFileSync(svgPath, svg);
+    console.log(`[svg]      saved SVG → ${svgPath}`);
+  }
 
   console.log('[render]   rasterising SVG to canvas...');
   const canvas = await renderSvgToCanvas(svg);
-  const debugPng = resolve(config.device.data_dir, 'debug.png');
-  // Save PNG debug output by default (can be skipped later via --no-debug flag)
-  const pngBuffer = canvas.toBuffer('image/png');
-  writeFileSync(debugPng, pngBuffer);
-  console.log(`[debug]    PNG saved → ${debugPng} (${pngBuffer.length} bytes)`);
+
+  // Optional: write PNG to disk when requested (--png)
+  if (args.pngOut) {
+    const pngBuffer = canvasToPng(canvas);
+    const pngPath = typeof args.pngOut === 'string' ? args.pngOut : resolve(config.device.data_dir, 'dashboard.png');
+    writeFileSync(pngPath, pngBuffer);
+    console.log(`[png]      saved PNG → ${pngPath} (${pngBuffer.length} bytes)`);
+  }
 
   console.log('[convert]  converting canvas → BMP (4-bit)…');
   const t0 = Date.now();
   const bmpBuffer = await canvasToBmp(canvas);
   console.log(`[convert]  done in ${Date.now()-t0}ms (${bmpBuffer.length} bytes BMP)`);
 
-  if (args.out) {
-    writeFileSync(args.out, bmpBuffer);
-    console.log(`[out]      saved BMP → ${args.out}`);
+  // Optional: write BMP to disk when requested (--bmp)
+  if (args.bmpOut) {
+    const bmpPath = typeof args.bmpOut === 'string' ? args.bmpOut : resolve(config.device.data_dir, 'dashboard.bmp');
+    writeFileSync(bmpPath, bmpBuffer);
+    console.log(`[bmp]      saved BMP → ${bmpPath}`);
   }
 
   if (args.dryRun) {
