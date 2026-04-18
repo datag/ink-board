@@ -41,7 +41,7 @@ export default {
         return { fill: cents <= 0 ? '#000000' : cents >= 28 ? '#ff0000' : '#ffffff' };
       } },
     // Price in cents — suffix ¢; fg: white <=0 or >=28, red >=25, else black
-    { type: "text", x: 150, y: 75, text: "{tibber_price}",  fontSize: 16, color: "#000000", fontFamily: "Press Start 2P", textAlign: 'right',
+    { type: "text", x: 150, y: 75, text: "{tibber_price}",  fontSize: 16, color: "#000000", fontFamily: "Press Start 2P", textAnchor: 'end',
       modifier: (widget, vars) => {
         const n = Number(vars.tibber_price);
         if (isNaN(n)) return {};
@@ -59,7 +59,7 @@ export default {
       } },
     // Power in watts — positive = consuming from grid, negative = exporting PV surplus
     // fg: white <=0 or >3000, red >1000, else black
-    { type: "text", x: 150, y: 100, text: "{tibber_power}", fontSize: 16, color: "#000000", fontFamily: "Press Start 2P", textAlign: "right",
+    { type: "text", x: 150, y: 100, text: "{tibber_power}", fontSize: 16, color: "#000000", fontFamily: "Press Start 2P", textAnchor: "end",
       modifier: (widget, vars) => {
         const n = Number(vars.tibber_power);
         if (isNaN(n)) return {};

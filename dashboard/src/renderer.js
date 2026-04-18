@@ -44,20 +44,6 @@ function interpolate(template, data) {
 }
 
 /**
- * Map canvas textAlign to SVG text-anchor.
- * @param {string} textAlign - Canvas textAlign value ('start', 'center', 'right')
- * @returns {string} SVG text-anchor value ('start', 'middle', 'end')
- */
-function canvasAlignToSvgAnchor(textAlign) {
-  const mapping = {
-    'start': 'start',
-    'center': 'middle',
-    'right': 'end'
-  };
-  return mapping[textAlign] ?? 'start';
-}
-
-/**
  * Convert a validated layout + data context to an SVG string (for debug.svg).
  * @param {import('./layout.js').Layout} layout
  * @param {Record<string, string>} data
@@ -94,10 +80,10 @@ export function layoutToSvg(layout, data) {
         const color  = widget.color ?? '#000000';
         const bold   = widget.bold ? 'bold' : 'normal';
         const family = widget.fontFamily ?? 'monospace';
-        const textAlign = canvasAlignToSvgAnchor(widget.textAlign ?? 'start');
+        const textAnchor = widget.textAnchor ?? 'start';
         const value  = escapeXml(interpolate(widget.text, data));
         lines.push(
-          `  <text x="${widget.x}" y="${widget.y}" font-family="${family}" font-size="${widget.fontSize}" font-weight="${bold}" fill="${color}" dominant-baseline="text-before-edge" text-anchor="${textAlign}">${value}</text>`
+          `  <text x="${widget.x}" y="${widget.y}" font-family="${family}" font-size="${widget.fontSize}" font-weight="${bold}" fill="${color}" text-anchor="${textAnchor}" dominant-baseline="text-before-edge">${value}</text>`
         );
         break;
       }
@@ -106,64 +92,4 @@ export function layoutToSvg(layout, data) {
 
   lines.push('</svg>');
   return lines.join('\n');
-}
-
-/**
- * Render a layout + data context to a PNG Buffer using node-canvas (Cairo).
- * Anti-aliasing is disabled at the Cairo context level.
- * @param {import('./layout.js').Layout} layout
- * @param {Record<string, string>} data
- * @returns {Buffer}
- */
-export function layoutToPng(layout, data) {
-  const canvas = createCanvas(DISPLAY_WIDTH, DISPLAY_HEIGHT);
-  const ctx = canvas.getContext('2d');
-
-  ctx.antialias         = 'none';
-  ctx.imageSmoothingEnabled = false;
-
-  // Background
-  ctx.fillStyle = layout.background ?? '#ffffff';
-  ctx.fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
-
-  for (const w of layout.widgets) {
-    const widget = applyModifier(w, data);
-    switch (widget.type) {
-      case 'rect': {
-        if (widget.fill) {
-          ctx.fillStyle = widget.fill;
-          ctx.fillRect(widget.x, widget.y, widget.w, widget.h);
-        }
-        if (widget.stroke) {
-          ctx.strokeStyle = widget.stroke;
-          ctx.lineWidth   = widget.strokeWidth ?? 1;
-          ctx.strokeRect(widget.x, widget.y, widget.w, widget.h);
-        }
-        break;
-      }
-      case 'line': {
-        ctx.strokeStyle = widget.color ?? '#000000';
-        ctx.lineWidth   = widget.width ?? 1;
-        ctx.beginPath();
-        ctx.moveTo(widget.x1, widget.y1);
-        ctx.lineTo(widget.x2, widget.y2);
-        ctx.stroke();
-        break;
-      }
-      case 'text': {
-        const bold   = widget.bold ? 'bold ' : '';
-        const family = widget.fontFamily ?? 'monospace';
-        // Quote family names that contain spaces (CSS font shorthand requirement)
-        const quotedFamily = family.includes(' ') ? `"${family}"` : family;
-        ctx.font         = `${bold}${widget.fontSize}px ${quotedFamily}`;
-        ctx.fillStyle    = widget.color ?? '#000000';
-        ctx.textBaseline = 'top';
-        ctx.textAlign = widget.textAlign ?? 'start';
-        ctx.fillText(interpolate(widget.text, data), widget.x, widget.y);
-        break;
-      }
-    }
-  }
-
-  return canvas.toBuffer('image/png');
 }
