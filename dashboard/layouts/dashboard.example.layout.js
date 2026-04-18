@@ -109,12 +109,12 @@ export default {
     },
 
     // ── Weather ───────────────────────────────────────────────────
-    { type: "text", x: 294, y: 1, text: "\uF010", fontSize: 20,  color: "#000000", fontFamily: "Weather Icons", textAnchor: "end",
+    { type: "text", x: 294, y: 1, text: "\uF07B" /* N/A */, fontSize: 20,  color: "#000000", fontFamily: "Weather Icons", textAnchor: "end",
       modifier: (widget, vars) => {
         const codeNum = Number(vars.weather_code);
         if (isNaN(codeNum)) return {};
         const entry = lookupWeatherIcon(codeNum);
-        if (!entry) return { text: '?', color: '#ff0000' };
+        if (!entry) return { text: "\uF07B" /* N/A */, color: '#ff0000' };
         const { codePoint, isNight, isDangerous } = pickCodePoint(entry, new Date(), 'Europe/Berlin');
         if (!codePoint) return {};
         // Red-inverted styling when dangerous: text red on black background
@@ -122,9 +122,9 @@ export default {
         return { text: codePoint };
       }
     },
-    { type: "text", x: 165, y: 15, text: "{weather}",     fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
+    { type: "text", x: 165, y: 15, text: "{weather_temp} \u00b0C",     fontSize: 16, color: "#000000", fontFamily: "Press Start 2P",
       modifier: (widget, vars) => {
-        const n = Number(vars.weather);
+        const n = Number(vars.weather_temp);
         return isNaN(n) ? {} : { text: n.toLocaleString('de-DE', { maximumFractionDigits: 1 }) + '\u00b0C' };
       } },
     { type: "text", x: 167, y: 40, text: "{weather_cond}", fontSize: 8, color: "#000000", fontFamily: "Press Start 2P" },

@@ -42,25 +42,14 @@
   // Each entry defines one data source and how to extract a value from it.
   // The `id` becomes the key referenced as {id} in the layout's text widgets.
   sources: [
-
     {
-      id: "btc",
-      // Written by: node scripts/binance.js BTCUSDT  (run via cron, e.g. every 5 minutes)
-      file: "binance_btcusdt.json",
-      key: "price",
-      max_age: 300,
-      stale_placeholder: "—",
-    },
-
-    {
-      id: "weather",
+      id: "weather_temp",
       // Written by: node scripts/weather.js  (run via cron, e.g. every 15 minutes)
       file: "weather.json",
       key: "temp_c",
       max_age: 1800,
       stale_placeholder: "—",
     },
-
     {
       id: "weather_cond",
       file: "weather.json",
@@ -68,24 +57,42 @@
       max_age: 1800,
       stale_placeholder: "—",
     },
-
     {
-      id: "power",
-      file: "power.txt",
-      max_age: 60,
+      id: "weather_code",
+      file: "weather.json",
+      key: "weather_code",
+      max_age: 1800,
       stale_placeholder: "—",
     },
 
+    // Written by: NodeRED on every message of MCU
     {
-      id: "clock",
-      file: "clock.txt",
-      max_age: 120,
-      stale_placeholder: "--:--",
+      id: "mcu_hot_water_temp",
+      file: "mcu_hot_water.json",
+      key: "temp",
+      max_age: 90,
+      stale_placeholder: "—",
+    },
+    {
+      id: "mcu_stove_temp",
+      file: "mcu_stove.json",
+      key: "temp",
+      max_age: 90,
+      stale_placeholder: "—",
+    },
+
+    // ── Binance ────────────────────────────────────────────────────────────────
+    // Written by: node scripts/binance.js BTCUSDT  (run via cron, e.g. every 5 minutes)
+    {
+      id: "btc",
+      file: "binance_btcusdt.json",
+      key: "price",
+      max_age: 300,
+      stale_placeholder: "—",
     },
 
     // ── Tibber ────────────────────────────────────────────────────────────────
     // Written by: node scripts/tibber.js  (run via cron, e.g. every minute)
-
     {
       id: "tibber_price",       // current spot price in your currency
       file: "tibber_price.json",
@@ -93,14 +100,12 @@
       max_age: 3600,
       stale_placeholder: "—",
     },
-
     {
       id: "tibber_power",       // net power in watts: positive = consuming, negative = exporting PV surplus
       file: "tibber_power.json",
       key: "powerNet",
       max_age: 120,
       stale_placeholder: "—",
-    },
-
-  ],
+    }
+  ]
 }
