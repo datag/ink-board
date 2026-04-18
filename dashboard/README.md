@@ -20,10 +20,7 @@ Copy `dashboard.json5.example` to `dashboard.json5` and edit the configuration.
 ```shell
 node render.js --config dashboard.json5
 
-# Write debug.png but doesn't publish to device
-node render.js --config dashboard.json5 --dry-run
+# Write SVG/PNG/BMP intermediate files but doesn't publish to device
+node render.js --config dashboard.json5 --svg --png --bmp --dry-run
 ```
 
-> [!NOTE]
-> Requires ImageMagick to be installed and available in the PATH.
-> `sudo apt install imagemagick`
