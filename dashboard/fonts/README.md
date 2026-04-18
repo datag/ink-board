@@ -53,3 +53,14 @@ https://pixeliconlibrary.com/
 Designed by Designers at HackerNoon
 
 License: [MIT](./Pixel_Icon_Library/LICENSE.txt)
+
+## Weather Icons
+
+Weather Themed Icons
+
+https://erikflowers.github.io/weather-icons/
+https://github.com/erikflowers/weather-icons
+
+Designed by Erik Flowers; originals based on work of Lukas Bischoff
+
+License: [Weather Icons licensed under SIL OFL 1.1]

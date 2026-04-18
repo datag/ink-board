@@ -11,6 +11,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 registerFont(resolve(HERE, '../fonts/Press_Start_2P/PressStart2P-Regular.ttf'), { family: 'Press Start 2P' });
 registerFont(resolve(HERE, '../fonts/Yarndings_12/Yarndings12-Regular.ttf'), { family: 'Yarndings 12' });
 registerFont(resolve(HERE, '../fonts/Pixel_Icon_Library/iconfont.ttf'), { family: 'iconfont' });
+registerFont(resolve(HERE, '../fonts/Weather_Icons/weathericons.ttf'), { family: 'Weather Icons' });
 
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
 const escapeXml = s => String(s).replace(/[&<>"']/g, c => ESC[c]);
