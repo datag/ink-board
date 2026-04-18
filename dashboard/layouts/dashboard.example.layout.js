@@ -111,14 +111,14 @@ export default {
     // ── Weather ───────────────────────────────────────────────────
     { type: "text", x: 294, y: 1, text: "\uF07B" /* N/A */, fontSize: 20,  color: "#000000", fontFamily: "Weather Icons", textAnchor: "end",
       modifier: (widget, vars) => {
+        const errorData = { text: "\uF07B" /* N/A */, color: '#ff0000' };
         const codeNum = Number(vars.weather_code);
-        if (isNaN(codeNum)) return {};
+        if (isNaN(codeNum)) return errorData;
         const entry = lookupWeatherIcon(codeNum);
-        if (!entry) return { text: "\uF07B" /* N/A */, color: '#ff0000' };
+        if (!entry) return errorData;
         const { codePoint, isNight, isDangerous } = pickCodePoint(entry, new Date(), 'Europe/Berlin');
-        if (!codePoint) return {};
-        // Red-inverted styling when dangerous: text red on black background
-        if (isDangerous) return { text: codePoint, color: '#ff0000', fill: '#000000' };
+        if (!codePoint) return errorData;
+        if (isDangerous) return { text: codePoint, color: '#ff0000' };
         return { text: codePoint };
       }
     },
