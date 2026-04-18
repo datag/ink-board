@@ -19,21 +19,22 @@ import { loadConfig }   from './src/config.js';
 import { loadData }     from './src/dataLoader.js';
 import { loadLayout }   from './src/layout.js';
 import { layoutToSvg, layoutToPng } from './src/renderer.js';
-import { pngToBmp }     from './src/converter.js';
+import { pngToBmp, svgToPng }     from './src/converter.js';
 import { uploadBmp }    from './src/uploader.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 function parseArgs(argv) {
-  const args = { config: resolve(HERE, 'dashboard.json5'), dryRun: false, debug: false, out: null };
+  const args = { config: resolve(HERE, 'dashboard.json5'), dryRun: false, debug: false, debugFromSvg: false, out: null };
   for (let i = 0; i < argv.length; i++) {
     switch (argv[i]) {
       case '--config':  args.config  = resolve(argv[++i]); break;
       case '--dry-run': args.dryRun  = true;               break;
       case '--debug':   args.debug   = true;               break;
+      case '--debug-from-svg': args.debugFromSvg = true;   break;
       case '--out':     args.out     = resolve(argv[++i]); break;
       case '--help': case '-h':
-        console.log('Usage: node render.js [--config dashboard.json5] [--dry-run] [--debug] [--out out.bmp]');
+        console.log('Usage: node render.js [--config dashboard.json5] [--dry-run] [--debug] [--debug-from-svg] [--out out.bmp]');
         process.exit(0);
     }
   }
@@ -64,6 +65,14 @@ async function main() {
   const debugSvg = resolve(config.device.data_dir, 'debug.svg');
   writeFileSync(debugSvg, svg);
   console.log(`[debug]    SVG saved → ${debugSvg}`);
+
+  if (args.debugFromSvg) {
+    console.log('[render]   converting SVG → PNG (debug-from-svg.png)...');
+    const svgPngBuffer = await svgToPng(svg);
+    const debugFromSvgPng = resolve(config.device.data_dir, 'debug-from-svg.png');
+    writeFileSync(debugFromSvgPng, svgPngBuffer);
+    console.log(`[debug]    debug-from-svg.png saved → ${debugFromSvgPng} (${svgPngBuffer.length} bytes)`);
+  }
 
   console.log('[render]   rasterising via Cairo (node-canvas)…');
   const pngBuffer = layoutToPng(layout, data);
