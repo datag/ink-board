@@ -20,7 +20,7 @@ This module renders a tri-color ePaper dashboard image and uploads it to an ink-
 
 ## High-level architecture
 - **Entry point**: `render.js` — parses CLI args, orchestrates the pipeline.
-- **Pipeline**: config → data → layout → SVG/PNG (via Cairo / node-canvas) → BMP → HTTP upload.
+- **Pipeline**: config → data → layout → SVG → PNG (via canvg + node-canvas) → BMP → HTTP upload. The PNG (debug.png) is now rasterised from the generated SVG by default.
 - **Runtime**: Node.js ≥18, ESM (`"type": "module"`).
 
 ### Source files (`src/`)
@@ -29,8 +29,8 @@ This module renders a tri-color ePaper dashboard image and uploads it to an ink-
 | `config.js` | Loads and validates `dashboard.json5` |
 | `dataLoader.js` | Reads hot-folder files from `data_dir`, checks staleness, returns a `vars` dict |
 | `layout.js` | Loads and validates the layout file (.js or .json5); compiles modifiers |
-| `renderer.js` | Converts layout + data → SVG string and PNG buffer (node-canvas) |
-| `converter.js` | Converts PNG buffer → BMP via `firmware/tools/png2bmp.sh` |
+| `renderer.js` | Converts layout + data → SVG string (layoutToSvg). Registers fonts used by the SVG renderer. |
+| `converter.js` | Converts SVG → PNG (canvg + node-canvas) and PNG → BMP via `firmware/tools/png2bmp.sh` |
 | `uploader.js` | POSTs BMP to the device at `POST /update` |
 
 ### Data-fetching scripts (`scripts/`)
@@ -87,6 +87,8 @@ new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', m
 - **Press Start 2P** is the standard font: 8px ≈ Adafruit GFX size 1 (labels), 16px ≈ size 2 (values).
 - `textBaseline = 'top'` — widget `y` is the **top** of the glyph box, not the baseline.
 
+Rendering note:
+- SVG → PNG rasterisation uses Canvg (in-process) and will use fonts registered by `renderer.js`. If Canvg or the DOM parser fails, the pipeline falls back to rasterising the SVG via a data-URL and `canvas.loadImage`; a warning is logged when this occurs. The PNG is saved to `device.data_dir/debug.png` on every run.
 ### Key conventions
 - All source files use ES modules (`import`/`export`); no CommonJS.
 - Prefer `async`/`await` over callbacks or raw Promise chains.

@@ -58,6 +58,7 @@ export async function svgToPng(svgString) {
     await v.render();
     return canvas.toBuffer('image/png');
   } catch (err) {
+    console.warn(`[warning] canvg or jsdom failed: ${err.message}. Falling back to data-URL rasterisation (may not respect registered fonts)`);
     // Fallback: rasterise via the image loader (data URL). This worked before
     // but may miss fonts if they are not embedded in the SVG.
     const dataUrl = 'data:image/svg+xml;base64,' + Buffer.from(svgString).toString('base64');
