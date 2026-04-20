@@ -1,0 +1,101 @@
+ink-board Enclosure — Model Description
+========================================
+
+Purpose
+-------
+A bottom-less 3D-printed box that houses the ink-board ePaper device.
+Printed upside-down (open face on the build plate); no support material required.
+The display window sits on a 45°-angled face cut from the top-front-long edge so
+the screen faces the viewer at a comfortable diagonal rather than pointing straight up
+or straight forward.
+
+
+Dimensions (all in mm)
+-----------------------
+  Outer box         L=160  W=80  H=80
+  Wall thickness    2.5 mm (all sides and top; bottom is open)
+  Chamfer leg       30 mm  →  angled face width = 30 × √2 ≈ 42.4 mm
+  Display slot      70 mm (along L) × 30 mm (across angled face)
+  Outer edge fillet 1.5 mm radius on all visible outer edges
+
+
+Geometry concept
+----------------
+Cross-section in the YZ plane (short-end view):
+
+     ___________
+    /            |   ← 45° angled face (chamfer leg = 30 mm each side)
+   |             |
+   |             |   total height = 80 mm
+   |_____________|   ← open bottom (Z = 0)
+
+  Y: front of box = Y=0; rear = Y=80
+  Z: bottom (open) = Z=0; top = Z=80
+
+The angled face runs the full 160 mm length.
+Its surface normal points in the [0, −1, +1] / √2 direction (forward-upward).
+The face center in world coordinates: X=80, Y=15, Z=65.
+
+A 70 × 30 mm rectangular window is cut perpendicularly through this face,
+centered both along the 160 mm length and across the 42.4 mm face width.
+
+
+Parameter table
+---------------
+  L          160    outer length (mm)
+  W           80    outer width  (mm)
+  H           80    outer height (mm)
+  wall_t       2.5  wall thickness (mm)
+  chamfer     30    45° chamfer leg length (mm); face width = chamfer × √2
+  slot_l      70    display slot length along L (mm)
+  slot_w      30    display slot width across face (mm)
+  slot_cut    15    slot cutter depth (mm); must exceed face wall thickness (~3.5 mm)
+  fillet_r     1.5  outer edge fillet radius (mm)
+  $fn         64    circle/sphere resolution
+
+
+OpenSCAD module structure
+-------------------------
+  filleted_box(l, w, h, r)   Solid box with filleted vertical edges and rounded top
+                              corners; bottom rim stays sharp. Built with hull() of
+                              cylinders (vertical edges) and spheres (top corners).
+
+  outer_shell()               Hollow shell: filleted_box minus inner cavity.
+                              Inner cavity starts at Z=0 (open bottom), leaves
+                              wall_t on all five closed sides.
+
+  chamfer_wedge()             Triangular prism removed from top-front-long edge.
+                              Built via rotate([0,90,0]) + linear_extrude of a
+                              right-triangle polygon — NOT polyhedron (see pitfalls).
+                              Coordinate mapping: local_x = −world_z, local_y = world_y;
+                              extrusion axis → world X.
+
+  display_slot()              Rectangular cutter (slot_l × slot_w × slot_cut) centered
+                              on the angled face. Placed at the face center
+                              (L/2, chamfer/2, H−chamfer/2), then rotate([45,0,0])
+                              aligns the cut perpendicular to the face.
+
+  Main:  difference() { outer_shell(); chamfer_wedge(); display_slot(); }
+
+
+Known design issue (slot spans full face)
+-----------------------------------------
+The outer_shell() inner cavity extends all the way to the chamfer region. After
+chamfer_wedge() removes the top-front-long corner, the only material on the angled
+face is the 2.5 mm shell wall — ~3.54 mm thick diagonally. From the front the entire
+chamfer area appears as a large opening; the 70×30 mm slot is indistinguishable.
+
+Fix approach: the angled face needs to be a solid panel with only the slot as the
+opening. Either:
+  (a) Clip the inner cavity so it does not extend past Z = H−chamfer (z=50), giving
+      a solid block behind the face, or
+  (b) Add a chamfer_fill() module that re-adds solid material at the face location
+      after the main difference, then subtract only the display slot through it.
+
+
+Print orientation
+-----------------
+Model origin: open bottom at Z=0.
+Place on build plate with Z=0 face down (box printed "upside-down").
+The 45° angled face overhangs at 45° — within the typical no-support threshold.
+All other faces are vertical or horizontal.
