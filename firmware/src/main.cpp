@@ -44,6 +44,7 @@ static void renderPlanes() {
         display.drawBitmap(0, 0, black_plane, EPD_W, EPD_H, GxEPD_BLACK);
         display.drawBitmap(0, 0, red_plane,   EPD_W, EPD_H, GxEPD_RED);
     } while (display.nextPage());
+    display.hibernate();
 }
 
 static void showText(const char* line1, const char* line2 = nullptr,
@@ -65,6 +66,7 @@ static void showText(const char* line1, const char* line2 = nullptr,
             display.print(line3);
         }
     } while (display.nextPage());
+    display.hibernate();
 }
 
 static const char* wifiStatusName(uint8_t status) {
@@ -279,6 +281,7 @@ void handleClear() {
     display.setFullWindow();
     display.firstPage();
     do { display.fillScreen(GxEPD_WHITE); } while (display.nextPage());
+    display.hibernate();
 }
 
 void handleRoot() {
