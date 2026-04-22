@@ -299,6 +299,22 @@ void handleRoot() {
         "  curl http://<ip>/update -F \"file=@output.bmp;type=image/bmp\"\n");
 }
 
+// ── WiFi helpers ──────────────────────────────────────────────────────────────
+
+// Attempt one WiFi connection, polling for up to 20 seconds.
+// Returns true if connected, false on timeout.
+static bool connectWiFi() {
+    showText("Connecting...", WIFI_SSID);
+    Serial.printf("Connecting to %s\n", WIFI_SSID);
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    uint32_t t = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - t < 20000) {
+        delay(500); Serial.print('.');
+    }
+    Serial.println();
+    return WiFi.status() == WL_CONNECTED;
+}
+
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
 void setup() {
@@ -311,25 +327,18 @@ void setup() {
     display.init(115200, true, 2, false);
     display.setRotation(1);
 
-    showText("Connecting...", WIFI_SSID);
-    Serial.printf("Connecting to %s\n", WIFI_SSID);
-
+    WiFi.persistent(false);
+    WiFi.setAutoReconnect(true);
     WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
 
-    uint32_t t = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - t < 20000) {
-        delay(500); Serial.print('.');
-    }
-    Serial.println();
-
-    if (WiFi.status() != WL_CONNECTED) {
+    while (!connectWiFi()) {
         uint8_t st = (uint8_t)WiFi.status();
         char errBuf[32];
         snprintf(errBuf, sizeof(errBuf), "Err %d: %s", st, wifiStatusName(st));
-        showText("WiFi failed!", errBuf);
-        Serial.println("WiFi connection failed!");
-        return;
+        showText("WiFi failed!", errBuf, "Retry in 60 s");
+        Serial.println("WiFi connection failed! Retrying in 60 s...");
+        WiFi.disconnect(true);
+        delay(60000);
     }
 
     String ip = WiFi.localIP().toString();
