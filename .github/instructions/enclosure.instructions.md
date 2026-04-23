@@ -72,8 +72,19 @@ Key parameters (all mm):
 | `slot_w`   |  30   | display slot width (across face)             |
 | `slot_cut` |  15   | cutter depth through face                    |
 | `fillet_r` |   1.5 | outer edge fillet radius                     |
+| `$fn`      |  64   | circle/sphere resolution                     |
 
 ## Key geometry conventions
+
+### Cross-section (YZ plane, short-end view)
+
+```
+     ___________
+    /            |   ← 45° angled face (chamfer leg = 30 mm each side)
+   |             |
+   |             |   total height = 80 mm
+   |_____________|   ← open bottom (Z = 0)
+```
 
 ### Coordinate system
 - X axis: along the 160 mm length (0 → 160)
@@ -99,6 +110,37 @@ The `eps=1` oversizing ensures clean boolean subtraction at shared faces.
 `rotate([45, 0, 0])` aligns the cube's Z axis with the face outward normal,
 so the cutter penetrates perpendicularly through the angled face.
 The slot is centered at the face center before rotating.
+
+## OpenSCAD module structure
+
+```
+filleted_box(l, w, h, r)   Solid box with filleted vertical edges and rounded top
+                            corners; bottom rim stays sharp. Built with hull() of
+                            cylinders (vertical edges) and spheres (top corners).
+
+outer_shell()               Hollow shell: filleted_box minus inner cavity.
+                            Inner cavity starts at Z=0 (open bottom), leaves
+                            wall_t on all five closed sides.
+
+chamfer_wedge()             Triangular prism removed from top-front-long edge.
+                            Built via rotate([0,90,0]) + linear_extrude of a
+                            right-triangle polygon — NOT polyhedron (see pitfalls).
+                            Coordinate mapping: local_x = −world_z, local_y = world_y;
+                            extrusion axis → world X.
+
+display_slot()              Rectangular cutter (slot_l × slot_w × slot_cut) centered
+                            on the angled face. Placed at the face center
+                            (L/2, chamfer/2, H−chamfer/2), then rotate([45,0,0])
+                            aligns the cut perpendicular to the face.
+
+Main:  difference() { outer_shell(); chamfer_wedge(); display_slot(); }
+```
+
+## Print orientation
+
+Model origin: open bottom at Z=0. Place on build plate with Z=0 face down (box
+printed "upside-down"). The 45° angled face overhangs at 45° — within the typical
+no-support threshold. All other faces are vertical or horizontal; no supports needed.
 
 ## Known pitfalls
 

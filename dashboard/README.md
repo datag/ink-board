@@ -24,3 +24,10 @@ node render.js --config dashboard.json5
 node render.js --config dashboard.json5 --svg --png --bmp --dry-run
 ```
 
+## Fetch data
+
+```shell
+# Run all enabled data-fetching scripts
+node fetch.js --config dashboard.json5
+```
+
