@@ -24,7 +24,7 @@ export default {
     // ── Left column: Tibber ─────────────────────────────────────────────────
     { type: "text", x: 2, y: 3, text: "\uF26A" /* \uF172 */, fontSize: 24,  color: "#000000", fontFamily: "iconfont" },
     // Price background: black-inverted <=0, red-inverted >=28, else white
-    { type: "rect", x: 50, y: 6, w: 108, h: 22, fill: "#ffffff",
+    { type: "rect", x: 35, y: 6, w: 123, h: 22, fill: "#ffffff",
       modifier: (widget, vars) => {
         const cents = Number(vars.tibber_price) * 100;
         if (isNaN(cents)) return {};
