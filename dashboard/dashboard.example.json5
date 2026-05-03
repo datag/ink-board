@@ -108,6 +108,22 @@
       key: "powerNet",
       max_age: 120,
       stale_placeholder: "—",
-    }
+    },
+
+    // ── Power monitoring ────────────────────────────────────────────────
+    {
+      id: "power_monitoring_power",
+      file: "power-monitoring.json",
+      key: "PowerConsumption",
+      max_age: 120,
+      stale_placeholder: "—",
+    },
+    {
+      id: "power_monitoring_power_production",
+      file: "power-monitoring.json",
+      key: "PowerTotalPV",
+      max_age: 120,
+      stale_placeholder: "—",
+    },
   ]
 }

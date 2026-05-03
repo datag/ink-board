@@ -13,6 +13,20 @@
 
 import { lookupWeatherIcon, pickCodePoint } from "../src/weatherIconMap.js";
 
+// Returns the effective net power in watts:
+//   - tibber_power  if available (not the stale placeholder "—")
+//   - otherwise power_monitoring_power − power_monitoring_power_production
+function resolveNetPower(vars) {
+  if (vars.tibber_power !== '—') {
+    const n = Number(vars.tibber_power);
+    if (!isNaN(n)) return n;
+  }
+  const consumption = Number(vars.power_monitoring_power);
+  const production  = Number(vars.power_monitoring_power_production);
+  if (isNaN(consumption) || isNaN(production)) return NaN;
+  return consumption - production;
+}
+
 export default {
   background: "#ffffff",
 
@@ -43,7 +57,7 @@ export default {
     // Power background: black-inverted <=0, red-inverted >3000, else white
     { type: "rect", x: 2, y: 31, w: 156, h: 22, fill: "#ffffff",
       modifier: (widget, vars) => {
-        const n = Number(vars.tibber_power);
+        const n = resolveNetPower(vars);
         if (isNaN(n)) return {};
         return { fill: n <= 0 ? '#000000' : n > 3000 ? '#ff0000' : '#ffffff' };
       } },
@@ -51,7 +65,7 @@ export default {
     // fg: white <=0 or >3000, red >1000, else black
     { type: "text", x: 152, y: 34, text: "{tibber_power}", fontSize: 16, color: "#000000", fontFamily: "Press Start 2P", textAnchor: "end",
       modifier: (widget, vars) => {
-        const n = Number(vars.tibber_power);
+        const n = resolveNetPower(vars);
         if (isNaN(n)) return {};
         const color = n <= 0 || n > 3000 ? '#ffffff' : n > 1000 ? '#ff0000' : '#000000';
         return {
