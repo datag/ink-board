@@ -26,7 +26,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 const GQL_HTTP = 'https://api.tibber.com/v1-beta/gql';
 const GQL_WS   = 'wss://api.tibber.com/v1-beta/gql';
-const WS_TIMEOUT_MS = 10_000;
+const WS_TIMEOUT_MS = 20_000;
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
 
