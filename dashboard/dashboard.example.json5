@@ -20,6 +20,8 @@
       enabled: true,
       // Personal access token from https://developer.tibber.com/settings/access-token
       access_token: "your-tibber-access-token-here",
+      // Whether to fetch live power data (consumption/production) in addition to price
+      fetchLivePower: false,
     },
 
     binance: {

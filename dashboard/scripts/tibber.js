@@ -14,7 +14,8 @@
  *                                    powerNet = power - powerProduction (negative = exporting to grid)
  *
  * Config keys (in dashboard.json5 → scripts.tibber):
- *   access_token  — Tibber personal access token
+ *   access_token    — Tibber personal access token
+ *   fetchLivePower  — set to true to fetch live power via WebSocket (requires Tibber Pulse)
  */
 import { writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
@@ -141,14 +142,18 @@ async function main() {
   writeFileSync(resolve(dataDir, 'tibber_price.json'), JSON.stringify(price));
   console.log(`[tibber]   price: ${price.total} ${price.level} (${price.startsAt})`);
 
-  // Live power
-  console.log('[tibber]   fetching live power…');
-  try {
-    const power = await fetchPower(wsUrl, homeId, token);
-    writeFileSync(resolve(dataDir, 'tibber_power.json'), JSON.stringify(power));
-    console.log(`[tibber]   power: ${power.powerNet} W net (${power.power} W consumption, ${power.powerProduction ?? 0} W production), accumulated cost: ${power.accumulatedCost}`);
-  } catch (err) {
-    console.warn(`[tibber]   power skipped: ${err.message}`);
+  // Live power (opt-in)
+  if (config.scripts?.tibber?.fetchLivePower) {
+    console.log('[tibber]   fetching live power…');
+    try {
+      const power = await fetchPower(wsUrl, homeId, token);
+      writeFileSync(resolve(dataDir, 'tibber_power.json'), JSON.stringify(power));
+      console.log(`[tibber]   power: ${power.powerNet} W net (${power.power} W consumption, ${power.powerProduction ?? 0} W production), accumulated cost: ${power.accumulatedCost}`);
+    } catch (err) {
+      console.warn(`[tibber]   power skipped: ${err.message}`);
+    }
+  } else {
+    console.log('[tibber]   live power skipped (fetchLivePower not enabled)');
   }
 }
 
