@@ -22,9 +22,9 @@ function resolveNetPower(vars) {
     if (!isNaN(n)) return n;
   }
   const consumption = Number(vars.power_monitoring_power);
-  const production  = Number(vars.power_monitoring_power_production);
-  if (isNaN(consumption) || isNaN(production)) return NaN;
-  return consumption - production;
+  if (isNaN(consumption)) return NaN;
+  const production = Number(vars.power_monitoring_power_production);
+  return consumption - (isNaN(production) ? 0 : production);
 }
 
 export default {
