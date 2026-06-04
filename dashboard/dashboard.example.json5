@@ -119,9 +119,9 @@
       stale_placeholder: "—",
     },
     {
-      id: "power_monitoring_power_production",
-      file: "power-monitoring.json",
-      key: "PowerTotalPV",
+      id: "pv_active_power",
+      file: "pv-active-power.json",
+      // scalar int value in watts — no key needed
       max_age: 120,
       stale_placeholder: "—",
     },
