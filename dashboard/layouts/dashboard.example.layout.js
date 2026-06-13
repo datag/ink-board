@@ -15,13 +15,13 @@ import { lookupWeatherIcon, pickCodePoint } from "../src/weatherIconMap.js";
 
 // Returns the effective net power in watts:
 //   - tibber_power  if available (not the stale placeholder "—")
-//   - otherwise power_monitoring_power − pv_active_power
+//   - otherwise power_consumption − pv_active_power
 function resolveNetPower(vars) {
   if (vars.tibber_power !== '—') {
     const n = Number(vars.tibber_power);
     if (!isNaN(n)) return n;
   }
-  const consumption = Number(vars.power_monitoring_power);
+  const consumption = Number(vars.power_consumption);
   if (isNaN(consumption)) return NaN;
   const production = Number(vars.pv_active_power);
   return consumption - (isNaN(production) ? 0 : production);
