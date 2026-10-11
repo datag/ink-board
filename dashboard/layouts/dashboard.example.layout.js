@@ -12,6 +12,7 @@
 //   Right (160–295 px): weather / power / clock (stacked, 3×42 px rows)
 
 import { lookupWeatherIcon, pickCodePoint } from "../src/weatherIconMap.js";
+import { statusToWidget } from "../src/workStatus.js";
 
 // Returns the effective net power in watts:
 //   - tibber_power  if available (not the stale placeholder "—")
@@ -156,6 +157,7 @@ export default {
 
     // ── Tests ────────────────────────────────────────────────────
     { type: "text", x: 170, y: 69, text: "[uwxyz{q", fontSize: 16,  color: "#000000", fontFamily: "Yarndings 12" },
-    { type: "text", x: 180, y: 95, text: "\uF1BE", fontSize: 24,  color: "#ff0000", fontFamily: "iconfont" },
+    { type: "text", x: 180, y: 95, text: "\uF1BE", fontSize: 24,  color: "#ff0000", fontFamily: "iconfont",
+      modifier: (widget, vars) => statusToWidget(vars.work_reachable) },
   ],
 };
