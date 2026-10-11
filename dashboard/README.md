@@ -24,10 +24,15 @@ node render.js --config dashboard.json5
 node render.js --config dashboard.json5 --svg --png --bmp --dry-run
 ```
 
+For debugging, add `--debug` to bypass the `max_age` staleness check for data files:
+
+```shell
+node render.js --config dashboard.json5 --debug
+```
+
 ## Fetch data
 
 ```shell
 # Run all enabled data-fetching scripts
 node fetch.js --config dashboard.json5
 ```
-
