@@ -2,23 +2,26 @@
 /**
  * scripts/work.js
  *
- * Checks whether the configured work host responds to one short ping and
- * writes the result to {data_dir}/work.json.
+ * Checks whether the configured work host is reachable via TCP connect
+ * (or active ECONNREFUSED response) and writes the result to {data_dir}/work.json.
  *
  * Usage:
  *   node scripts/work.js [--config <path>]
  *
  * Config keys (in dashboard.json5 -> scripts.work):
- *   host - hostname or IP address to check
+ *   host    - hostname or IP address to check
+ *   port    - optional TCP port to probe (default: 22)
+ *   timeout - optional timeout in ms (default: 2000, max: 2000)
  */
 import { mkdirSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { execFile } from 'child_process';
+import net from 'net';
 import { loadConfig } from '../src/config.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const PING_TIMEOUT_SECONDS = '1';
+const DEFAULT_PORT = 22;
+const DEFAULT_TIMEOUT_MS = 2000;
 
 function parseArgs(argv) {
   const args = { config: resolve(HERE, '../dashboard.json5') };
@@ -28,17 +31,41 @@ function parseArgs(argv) {
   return args;
 }
 
-function pingHost(host) {
+function probeHost(host, port = DEFAULT_PORT, timeoutMs = DEFAULT_TIMEOUT_MS) {
   return new Promise(resolve => {
-    execFile('ping', ['-c', '1', '-W', PING_TIMEOUT_SECONDS, host], error => {
-      if (!error) {
-        resolve(true);
+    const socket = new net.Socket();
+    let isReachable = false;
+    let settled = false;
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(result);
+    };
+
+    socket.setTimeout(timeoutMs);
+
+    socket.connect(port, host, () => {
+      isReachable = true;
+      finish(true);
+    });
+
+    socket.on('error', err => {
+      // ECONNREFUSED means the host actively responded with RST -> online!
+      if (err.code === 'ECONNREFUSED') {
+        finish(true);
         return;
       }
-      if (typeof error.code !== 'number') {
-        console.warn(`[work]     ping unavailable (${error.message}); treating host as unreachable`);
-      }
-      resolve(false);
+      finish(false);
+    });
+
+    socket.on('timeout', () => {
+      finish(false);
+    });
+
+    socket.on('close', () => {
+      finish(isReachable);
     });
   });
 }
@@ -49,11 +76,14 @@ async function main() {
   const host = config.scripts?.work?.host;
   if (!host) throw new Error('Missing scripts.work.host in config');
 
+  const port = config.scripts?.work?.port ?? DEFAULT_PORT;
+  const timeoutMs = Math.min(config.scripts?.work?.timeout ?? DEFAULT_TIMEOUT_MS, 2000);
+
   const dataDir = resolve(config.device.data_dir);
   mkdirSync(dataDir, { recursive: true });
 
-  console.log(`[work]     pinging ${host}…`);
-  const reachable = await pingHost(host);
+  console.log(`[work]     probing ${host}:${port} (timeout ${timeoutMs}ms)…`);
+  const reachable = await probeHost(host, port, timeoutMs);
   const status = reachable ? 'reachable' : 'unreachable';
   const outFile = resolve(dataDir, 'work.json');
   writeFileSync(outFile, JSON.stringify({ status }));

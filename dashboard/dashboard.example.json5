@@ -41,8 +41,12 @@
 
     work: {
       enabled: true,
-      // Hostname or IP address of the work device to check with one ping
+      // Hostname or IP address of the work device to check
       host: "example.home",
+      // Optional TCP port to probe (default: 22)
+      port: 22,
+      // Optional timeout in ms (default: 2000, capped at 2000)
+      timeout: 2000,
     },
 
   },
